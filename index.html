@@ -1722,6 +1722,33 @@ body:has(#onb:not([hidden])) .veil{display:none}
 .wg[data-wid]{cursor:pointer}
 .wg[data-wid]:active{transform:scale(.985);transition:transform .12s var(--ease)}
 .plane.editing .wg[data-wid]:active{transform:none}
+/* v10.2 — a long card shows its top; the whole card opens full screen */
+.seccard.clip{overflow:hidden}
+.seccard.clip::after{content:"";position:absolute;left:0;right:0;bottom:0;height:150px;pointer-events:none;border-radius:0 0 28px 28px;
+  background:linear-gradient(to bottom,transparent,var(--clipfade) 78%)}
+:root{--clipfade:rgba(236,239,247,.96);--cvbg:rgba(225,230,242,.55)} html[data-theme="dark"]{--clipfade:rgba(16,17,24,.97);--cvbg:rgba(10,11,16,.72)}
+.clipopen{position:absolute;left:50%;bottom:18px;transform:translateX(-50%);z-index:3;height:44px;padding:0 20px;border-radius:999px;
+  background:var(--ink);color:var(--ink-inv);font-size:14px;font-weight:600;display:flex;align-items:center;gap:8px;white-space:nowrap}
+.clipopen svg{width:16px;height:16px}
+.clipopen:active{transform:translateX(-50%) scale(.96)}
+.cardview{position:fixed;inset:0;z-index:30;display:flex;flex-direction:column;opacity:0;
+  background:var(--cvbg);-webkit-backdrop-filter:blur(24px);backdrop-filter:blur(24px);
+  transition:opacity .25s var(--ease),transform .3s var(--ease)}
+.cardview.in{opacity:1}
+.cardview .cv-body{transform:translateY(24px);transition:transform .3s var(--ease)}
+.cardview.in .cv-body{transform:none}
+.cv-top{display:flex;align-items:center;justify-content:space-between;padding:calc(var(--safe-t) + 8px) 18px 8px 8px;flex:none}
+.cv-back{display:flex;align-items:center;gap:4px;min-height:44px;padding:0 10px;font-size:15px;font-weight:500;color:var(--ink)}
+.cv-back svg{width:20px;height:20px}
+.cv-top .brand{font-size:20px;color:var(--ink)}
+.cv-body{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:4px 0 0}
+.cv-body .seccard{transform:none!important;opacity:1!important;min-height:100%;border-radius:30px 30px 0 0;border-bottom:0;
+  padding-bottom:calc(var(--safe-b) + 40px);max-width:680px;margin:0 auto;box-sizing:border-box}
+@media (prefers-reduced-motion:reduce){ .cardview,.cardview .cv-body{transition:none;transform:none} }
+/* cover: the photo keeps its own controls, the card menu stays reachable */
+.seccard.has-cover .cardmenu{top:14px;right:14px;background:rgba(0,0,0,.4);color:#fff;border-radius:999px;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+.seccard .covbtn{top:auto;bottom:10px;right:12px;background:rgba(0,0,0,.4);color:#fff;border:0;font-weight:600}
+.seccard .covbtn.x{left:12px;right:auto}
 @media (min-width:1000px){ .sec-rail{padding-inline:max(0px,calc(50% - 340px));scroll-padding-inline:max(0px,calc(50% - 340px))} .sec-rail .seccard{flex:0 0 min(100%,680px)} .posbar{max-width:680px;margin:0 auto;width:100%} .wg .w-r{min-height:32px;font-size:14px} .wg{padding:14px} .wg .w-head{min-height:18px} .wg-now{padding:22px} }
 :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 </style>
@@ -1984,6 +2011,12 @@ c1019 -66 1952 -425 2739 -1054 606 -484 1100 -1127 1406 -1831 214 -493 336
   </section>
 </div>
 
+<!-- ONE SPACE, OPEN — the whole card, full screen -->
+<div class="cardview" id="cardView" hidden>
+  <div class="cv-top"><button class="cv-back" data-card-back><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>Back</button><span class="brand display">Aurora</span></div>
+  <div class="cv-body" id="cardViewBody"></div>
+</div>
+
 <!-- PHONE TAB BAR -->
 <nav class="tabbar glass hidden" id="tabbar" aria-label="Main">
   <span class="ind" id="tabInd"></span>
@@ -2148,7 +2181,7 @@ c1019 -66 1952 -425 2739 -1054 606 -484 1100 -1127 1406 -1831 214 -493 336
    Data lives on this device only. No server, no sync.
    ===================================================================== */
 
-const VERSION = '10.1.0-test';
+const VERSION = '10.2.0-test';
 const SCHEMA = 6;          // verze tvaru dat — viz migrace ve Store
 /* Default set of personal Spaces. Generated on first run; from then on it
    is data — rename, add and remove as you like. */
@@ -2812,6 +2845,7 @@ function showTab(tab, opts = {}) {
   if (opts.sector) { currentSector = opts.sector; syncRailType(); }
   const gov = $('#gridOverlay'); if (gov && !gov.hidden) closeGrid();
   if (tab !== 'home' && homeEdit) exitEdit();
+  if (cardOpen) closeCard();
   if (tipOn) hideTip();
   $$('.screen').forEach(s => s.classList.toggle('active', s.dataset.screen === tab));
   $$('#tabbar button,.sidenav button.nav').forEach(b => b.classList.toggle('on', b.dataset.tab === tab));
@@ -2841,7 +2875,7 @@ addEventListener('resize', () => { moveTabInd(); if (currentTab === 'board') ren
 (function pageSwipe() {
   const app = document; if (!app) return;
   let x0 = 0, y0 = 0, id = null, live = false, decided = false;
-  const blocked = t => !!t.closest('.sec-rail,.strip,.rail,.deck,.seg,.swatches,input,textarea,select,#tabbar,.tagbar');
+  const blocked = t => !!t.closest('#cardView,.sec-rail,.strip,.rail,.deck,.seg,.swatches,input,textarea,select,#tabbar,.tagbar');
   app.addEventListener('pointerdown', e => {
     if (e.pointerType === 'mouse' && e.button !== 0) return;
     if (Day.isOpen?.() || Standby.isOpen?.() || tipOn) return;
@@ -3659,7 +3693,42 @@ function renderSector() {
   const i = list.findIndex(x => x.id === currentSector);
   requestAnimationFrame(() => { const c = rail.children[i]; if (c) rail.scrollLeft = railOffset(rail, c); });
   bindRail(rail, list); paintCovers(); hydrateImages(rail);
+  requestAnimationFrame(clampCards);
   maybeTips('spaces');
+}
+/* A card longer than the screen shows its top and opens whole on a tap.
+   Scrolling a long card under the fixed bars hid half of it. */
+function clampCards() {
+  const rail = $('#secRail'); if (!rail || currentTab !== 'sectors') return;
+  const top = rail.getBoundingClientRect().top;
+  const tb = $('#tabbar'); const tbH = tb && getComputedStyle(tb).display !== 'none' ? innerHeight - tb.getBoundingClientRect().top : 0;
+  const room = Math.max(360, Math.floor(innerHeight - top - tbH - 14));
+  for (const c of rail.querySelectorAll('.seccard')) {
+    c.classList.remove('clip'); c.style.maxHeight = '';
+    c.querySelector('.clipopen')?.remove();
+    if (c.scrollHeight > room + 8) {
+      c.classList.add('clip'); c.style.maxHeight = room + 'px';
+      c.insertAdjacentHTML('beforeend', `<button class="clipopen" data-open-card="${c.dataset.cardSector}">Open the whole card<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>`);
+    }
+  }
+}
+addEventListener('resize', () => { if (currentTab === 'sectors') clampCards(); });
+let cardOpen = null;
+function openCard(id) {
+  const sp = spaceById(id); if (!sp) return;
+  cardOpen = id; currentSector = id;
+  $('#cardViewBody').innerHTML = secCard(sp);
+  paintCovers(); hydrateImages($('#cardViewBody'));
+  const v = $('#cardView'); v.hidden = false; v.scrollTop = 0; $('#cardViewBody').scrollTop = 0;
+  requestAnimationFrame(() => v.classList.add('in'));
+  $('#tabbar').classList.add('hidden'); $('#topbar').classList.add('hidden');
+}
+function closeCard() {
+  if (!cardOpen) return;
+  cardOpen = null;
+  const v = $('#cardView'); v.classList.remove('in'); v.hidden = true; $('#cardViewBody').innerHTML = '';
+  $('#tabbar').classList.remove('hidden'); $('#topbar').classList.remove('hidden');
+  if (currentTab === 'sectors') renderSector();
 }
 /* With ten Spaces you lose track of where you are in the stack. The bar says
    which one you are on, how many there are, and opens the grid. */
@@ -3934,9 +4003,15 @@ function scrollRailTo(id) {
    and "+ Add a Space" lives in the grid. The card ends, the tab bar begins. */
 function refreshSector() {
   const sp = spaceById(currentSector); if (!sp) return;
+  if (cardOpen === sp.id) {
+    const b = $('#cardViewBody'), y = b.scrollTop;
+    b.innerHTML = secCard(sp); paintCovers(); hydrateImages(b); b.scrollTop = y;
+    return;
+  }
   const card = $(`#secRail [data-card-sector="${sp.id}"]`);
   if (card) card.outerHTML = secCard(sp);
   paintCovers(); hydrateImages($('#secRail'));
+  requestAnimationFrame(clampCards);
 }
 
 /* =====================================================================
@@ -5049,6 +5124,8 @@ document.addEventListener('click', async e => {
     scrollRailTo(id); renderWheel(); markPos(railSectors());
     return;
   }
+  const oc = t.closest('[data-open-card]'); if (oc) return openCard(oc.dataset.openCard);
+  if (t.closest('[data-card-back]')) return closeCard();
   const cs = t.closest('[data-card-sector]'); if (cs && !t.closest('.switch') && cs.dataset.cardSector !== currentSector) { scrollRailTo(cs.dataset.cardSector); return; }
   const os = t.closest('[data-open-sector]'); if (os && !t.closest('.switch')) return showTab('sectors', { sector: os.dataset.openSector });
 
