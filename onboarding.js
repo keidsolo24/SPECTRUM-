@@ -47,6 +47,13 @@ function render(){document.body.dataset.step=state.step;document.documentElement
  save();}
 async function boot(){render();try{const file=await photoStore('get');if(file)photoURL=URL.createObjectURL(file);else state.photoName=''}catch{state.photoName=''}render()}
 let finishPending=false;
+// Only compress for an actual keyboard resize, not a phone held landscape.
+let setupHeight=innerHeight,setupWidth=innerWidth;
+function fitSetupKeyboard(){if(Math.abs(innerWidth-setupWidth)>80){setupWidth=innerWidth;setupHeight=innerHeight;}
+ setupHeight=Math.max(setupHeight,innerHeight);
+ document.body.classList.toggle('keyboard-open',setupHeight-innerHeight>120&&!!document.activeElement?.matches('input:not([type=checkbox]),textarea'));
+}
+window.addEventListener('resize',fitSetupKeyboard);document.addEventListener('focusin',fitSetupKeyboard);document.addEventListener('focusout',()=>setTimeout(fitSetupKeyboard,0));
 async function openAurora(){
  if(finishPending)return;finishPending=true;const button=$('#continue');button.disabled=true;button.textContent='Saving your space…';
  try{const photo=state.boardAdded&&state.boardType==='photo'?await photoStore('get'):null;parent.postMessage({type:'aurora:finish-setup',state:structuredClone(state),photo},location.origin)}
