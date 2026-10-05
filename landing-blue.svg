@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 1440" fill="none">
+<defs>
+ <linearGradient id="blue" x1="0" y1="0" x2="1440" y2="1440" gradientUnits="userSpaceOnUse"><stop stop-color="#548db4"/><stop offset=".55" stop-color="#4b81a8"/><stop offset="1" stop-color="#365f8c"/></linearGradient>
+ <linearGradient id="cream" x1="300" y1="150" x2="1140" y2="1440" gradientUnits="userSpaceOnUse"><stop stop-color="#e1dcc3"/><stop offset=".6" stop-color="#f0dfb2"/><stop offset="1" stop-color="#f5e4ba"/></linearGradient>
+ <filter id="soft" x="-35%" y="-35%" width="170%" height="170%"><feGaussianBlur stdDeviation="29"/></filter>
+ <filter id="mist" x="-35%" y="-35%" width="170%" height="170%"><feGaussianBlur stdDeviation="48"/></filter>
+</defs>
+<path fill="url(#blue)" d="M0 0h1440v1440H0z"/>
+<g filter="url(#soft)">
+ <path d="M340-160C640 60 4 220 304 554S803 909 207 1549" stroke="#2c4770" stroke-width="183"/>
+ <path d="M599-160C917 25 293 146 485 367S999 498 829 741S341 1001 597 1570" stroke="url(#cream)" stroke-width="110"/>
+ <path d="M1478 38C1236 297 1188 214 1043 438S1393 729 1036 996S696 1260 949 1536" stroke="#2e4973" stroke-width="192"/>
+ <path d="M1632 347C1447 522 1097 495 1202 809S791 1085 1039 1514" stroke="url(#cream)" stroke-width="109"/>
+ <path d="M-125 960C227 659 414 1016 247 1241S-50 1414-116 1604" stroke="url(#cream)" stroke-width="128"/>
+</g>
+<ellipse cx="701" cy="703" rx="345" ry="243" fill="#5383a8" opacity=".6" filter="url(#mist)"/>
+</svg>
+

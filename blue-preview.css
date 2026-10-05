@@ -1,0 +1,19 @@
+/* Blue colour study. Layout, media and behaviour remain those of the full app. */
+:root{
+ --ink:#f0eee4;--mute:rgba(225,235,244,.76);--faint:rgba(204,222,241,.50);--hair:rgba(186,212,245,.12);
+ --glass:rgba(12,29,54,.78);--glass-2:rgba(19,40,68,.68);--edge:rgba(184,213,246,.16);
+ --btn:#eaece3;--btn-ink:#112740;--nav:rgba(12,29,51,.92);--sheet:#142a45;--chk:#102139;
+ --field:rgba(159,195,232,.08);--soft:rgba(173,205,237,.07);--late:#f1b087;
+}
+body{background:#112b50}
+.app:not(.light) .glow{
+ --ink:#f0eee4;--mute:rgba(225,235,244,.78);--faint:rgba(204,222,241,.54);--hair:rgba(186,212,245,.14);--btn:#eaece3;--btn-ink:#112740;--chk:#102139;
+ background:linear-gradient(160deg,color-mix(in srgb,var(--c) 40%,#181e23) 0%,color-mix(in srgb,var(--c) 14%,#181e23) 48%,#181e23 92%);
+ border-color:rgba(184,213,246,.2);box-shadow:inset 0 1px 0 #d0e5ff12,0 10px 30px #0312261a;
+}
+.app:not(.light) .nextbg{background:linear-gradient(135deg,#345e86,#173450 70%,#142941)}
+.app:not(.light) .glass2{background:rgba(11,28,49,.6)}
+.app:not(.light) .glass,.app:not(.light) .nav{box-shadow:inset 0 1px 0 #d0e5ff0d}
+.nav .plus{box-shadow:0 4px 14px #06182b33}
+.app:not(.light).glassy{--glass:rgba(132,179,218,.13);--glass-2:rgba(132,179,218,.10);--nav:rgba(14,35,59,.7);--sheet:rgba(19,43,68,.94)}
+.app.light{--ink:#142b45;--mute:rgba(20,43,69,.72);--faint:rgba(20,43,69,.48);--hair:rgba(20,43,69,.11);--btn:#173a5b;--btn-ink:#f0eee4;--sheet:#edf1ef;--nav:rgba(234,241,244,.94);--glass:rgba(231,240,245,.9);--glass-2:rgba(226,238,246,.8)}

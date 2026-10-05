@@ -1,0 +1,14 @@
+:root{--mute:#d8e3eb}
+body:before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;background:linear-gradient(#0a203b80,#0a203b70)}
+.shell{position:relative;z-index:1}
+.intro,.hint,.preview-caption,.footer-note,.kicker,.skip{color:#e4ebed}
+.calendar-dialog{color:#f6ecdc;background:#193653}
+.plan-preview{background:#142c49f5}
+.source-choice,.input-wrap,textarea,.segments{background:#142c49e8}
+.source-choice.on{background:#284963;border-color:#eae5dba0}
+textarea::placeholder,input::placeholder{color:#c3ced8;opacity:1}
+.upload-button{background:#142c49b8;border-color:#e4ebed80}
+.board-note{background:#eee9dc;color:#1d3654;border-color:#ffffff50;box-shadow:inset 0 1px #fff7}
+.board-note .small-label,.board-note .note-tail{color:#52687c}
+.board-note p{color:#1d3654}
+.photo-caption{color:#fff7e9;background:linear-gradient(transparent,#081a2cf5)}

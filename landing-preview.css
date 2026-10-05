@@ -1,0 +1,18 @@
+.splash.aurora-landing{position:fixed;inset:0;width:100%;height:100dvh;min-height:100svh;z-index:100;background:#335e86;overflow:hidden;padding:0;display:block;isolation:isolate;cursor:pointer;touch-action:manipulation;}
+.aurora-landing .landing-field{position:absolute;inset:-9%;background:url(landing-blue.svg) center/cover no-repeat;will-change:transform;animation:landing-drift 24s ease-in-out infinite alternate;pointer-events:none}
+.aurora-landing:before{content:'';position:absolute;inset:0;z-index:1;pointer-events:none;background:radial-gradient(ellipse at center,#102c4812,transparent 62%),linear-gradient(0deg,#10294024,transparent 30%)}
+.aurora-landing .landing-noise{position:absolute;inset:0;z-index:1;opacity:.035;pointer-events:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Cpath fill='%23fff' filter='url(%23n)' d='M0 0h180v180H0z'/%3E%3C/svg%3E")}
+.aurora-landing .landing-enter{position:absolute;inset:0;width:100%;height:100%;z-index:2;border:0;border-radius:0;outline-offset:-8px;color:#f5f0df;background:none;display:grid;place-items:center;cursor:pointer;padding:0}
+.aurora-landing .landing-brand{position:relative;display:block;width:clamp(240px,34vw,450px);max-width:72vw;aspect-ratio:439/134;transform:translateY(-1vh)}
+.aurora-landing .landing-word{display:block;width:100%;height:100%;background:#f5f0df;mask:url(aurora-logo.svg) center/contain no-repeat;-webkit-mask:url(aurora-logo.svg) center/contain no-repeat;animation:landing-reveal 1.15s cubic-bezier(.2,.7,.2,1) both}
+.aurora-landing .landing-glint{position:absolute;left:0;top:61%;width:10px;height:5px;border-radius:50%;background:#f5f0df;animation:landing-glint .95s cubic-bezier(.2,.7,.2,1) both}
+.aurora-landing .landing-hint{position:absolute;bottom:calc(42px + env(safe-area-inset-bottom,0px));left:0;right:0;text-align:center;font:500 10px/1.5 Inter,system-ui,sans-serif;letter-spacing:.25em;color:#f5f0dfd9;animation:landing-hint 1.8s ease both}
+.aurora-landing.leaving{opacity:0;transition:opacity .65s ease;pointer-events:none}
+.aurora-landing.leaving .landing-brand{transform:translateY(-1vh) scale(1.045);opacity:0;transition:transform .65s cubic-bezier(.2,.7,.2,1),opacity .4s}
+.aurora-landing.leaving .landing-hint{opacity:0;transition:opacity .2s;animation:none}
+@keyframes landing-reveal{0%,12%{clip-path:inset(0 100% 0 0);transform:translateX(-9px);opacity:0}35%{opacity:1}100%{clip-path:inset(0 0 0 0);transform:none;opacity:1}}
+@keyframes landing-glint{0%{opacity:0;transform:translateX(0) scaleX(.4)}15%{opacity:1}70%{opacity:.9;transform:translateX(150px) scaleX(1.8)}100%{opacity:0;transform:translateX(200px) scaleX(.4)}}
+@keyframes landing-hint{0%,60%{opacity:0;transform:translateY(4px)}100%{opacity:1;transform:none}}
+@keyframes landing-drift{from{transform:translate(-1%,-1%) scale(1.02) rotate(-2deg)}to{transform:translate(1%,1.5%) scale(1.065) rotate(2deg)}}
+@media(max-width:600px){.aurora-landing .landing-field{background-size:auto 116%;background-position:47% 50%}.aurora-landing .landing-hint{bottom:calc(34px + env(safe-area-inset-bottom,0px))}}
+@media(prefers-reduced-motion:reduce){.aurora-landing .landing-field,.aurora-landing .landing-word,.aurora-landing .landing-hint{animation:none}.aurora-landing .landing-glint{display:none}.aurora-landing.leaving,.aurora-landing.leaving .landing-brand{transition:none}}
