@@ -40,12 +40,16 @@
 .item[data-a="pd"] > .sub:first-child{width:auto!important;min-width:64px;flex-shrink:0}
 /* The root paints beneath system safe areas; content alone reserves their space. */
 html,body{width:100%;height:100%;overflow:hidden;overscroll-behavior:none;background:#234563}
-body{background:linear-gradient(#0e0a0866,#0e0a0857),url(landing-blue.svg) center/cover fixed}
+body{position:fixed;inset:0;background:linear-gradient(#0e0a0866,#0e0a0857),url(landing-blue.svg) center/cover fixed}
 /* Paint the full layout viewport, independently of iOS's shorter visual viewport. */
 .app{inset:0;width:100%;height:auto;min-height:100dvh}
 .app>.bg{position:fixed;inset:0;min-height:100lvh}
-.app>.col{bottom:auto;height:100%;height:min(100%,var(--app-height,100%))}
+.app>.col{top:var(--app-top,0px);bottom:auto;height:100%;height:min(100%,var(--app-height,100%))}
 .splash.tutorial-screen,.splash.onboarding-screen{height:100%;height:min(100%,var(--app-height,100%))}
+.splash.onboarding-screen{top:var(--app-top,0px);bottom:auto}
+html[data-keyboard] .sheet{box-sizing:border-box;bottom:max(0px,calc(100% - var(--app-top,0px) - var(--app-height)));max-height:calc(var(--app-height) - 16px);padding-bottom:16px;overscroll-behavior:contain}
+html[data-keyboard] .cloud-dialog{top:calc(var(--app-top,0px) + 8px);bottom:auto;margin:0 auto;max-height:calc(var(--app-height) - 16px);overflow-y:auto;overscroll-behavior:contain}
+@media(pointer:coarse){input:not([type=checkbox]):not([type=radio]):not([type=range]),textarea,[contenteditable="true"]{font-size:max(16px,1em)!important}}
 @media(display-mode:standalone){html,body{min-height:100lvh}.app{min-height:100lvh}}
 /* Separate actual materials, including the coloured card surfaces. */
 .app:not(.glassy){--glass:#172f49;--glass-2:#203c56;--nav:#152e48;--sheet:#172f49}

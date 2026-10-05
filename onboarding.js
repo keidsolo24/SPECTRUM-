@@ -54,6 +54,13 @@ function fitSetupKeyboard(){if(Math.abs(innerWidth-setupWidth)>80){setupWidth=in
  document.body.classList.toggle('keyboard-open',setupHeight-innerHeight>120&&!!document.activeElement?.matches('input:not([type=checkbox]),textarea'));
 }
 window.addEventListener('resize',fitSetupKeyboard);document.addEventListener('focusin',fitSetupKeyboard);document.addEventListener('focusout',()=>setTimeout(fitSetupKeyboard,0));
+function pinSetup(){
+ const focused=!!document.activeElement?.matches('input:not([type=checkbox]):not([type=radio]):not([type=file]),textarea');
+ if(scrollX||scrollY)window.scrollTo({left:0,top:0,behavior:'instant'});
+ if(parent!==window)parent.postMessage({type:'aurora:input-focus',focused},location.origin);
+}
+document.addEventListener('focusin',pinSetup);document.addEventListener('focusout',()=>setTimeout(pinSetup,0));
+window.addEventListener('scroll',pinSetup,{passive:true});window.addEventListener('resize',pinSetup);
 async function openAurora(){
  if(finishPending)return;finishPending=true;const button=$('#continue');button.disabled=true;button.textContent='Saving your space…';
  try{const photo=state.boardAdded&&state.boardType==='photo'?await photoStore('get'):null;parent.postMessage({type:'aurora:finish-setup',state:structuredClone(state),photo},location.origin)}

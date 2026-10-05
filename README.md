@@ -1,6 +1,6 @@
 # Aurora — test build, 5 October 2026
 
-Test app: https://keidsolo24.github.io/aura-app/
+Test app: https://keidsolo24.github.io/SPECTRUM-/
 
 Phone and desktop: launch screen → tutorial → first-time setup → Home, Spaces, Board and Plan. Existing local setup goes straight to the app after tapping the logo.
 

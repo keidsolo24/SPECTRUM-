@@ -389,12 +389,38 @@ textarea.field{height:96px;padding:12px 16px;font:400 13px/1.4 ui-monospace,Menl
 .glassy .cloud-dialog{background:var(--sheet);backdrop-filter:blur(26px);-webkit-backdrop-filter:blur(26px)}
 [hidden]{display:none!important}
 </style>
-<link rel="stylesheet" href="blue-preview.css"><link rel="stylesheet" href="landing-preview.css"><link rel="stylesheet" href="integrated-flow.css?v=ios-bottom4"><script>// Keep the app inside the visible mobile viewport when browser chrome or the keyboard changes.
-(()=>{const viewport=window.visualViewport;let frame;
+<link rel="stylesheet" href="blue-preview.css"><link rel="stylesheet" href="landing-preview.css"><link rel="stylesheet" href="integrated-flow.css?v=ios-keyboard5"><script>// iOS moves (not only resizes) the visual viewport when focusing an input.
+// Anchor the interactive layer to that viewport; never translate the background.
+(()=>{const viewport=window.visualViewport,root=document.documentElement;let frame,fullHeight=innerHeight,lastWidth=innerWidth,frameInput=false;
+ const editing=()=>frameInput||!!document.activeElement?.matches('input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]),textarea,[contenteditable="true"]');
  const fit=()=>{cancelAnimationFrame(frame);frame=requestAnimationFrame(()=>{
+  if(Math.abs(innerWidth-lastWidth)>80){fullHeight=innerHeight;lastWidth=innerWidth;}
+  fullHeight=Math.max(fullHeight,innerHeight);
   const h=viewport&&viewport.scale===1?viewport.height:innerHeight;
-  document.documentElement.style.setProperty('--app-height',Math.round(h)+'px');
- });};window.addEventListener('resize',fit);viewport?.addEventListener('resize',fit);fit();
+  const keyboard=editing()&&fullHeight-h>100;
+  const top=keyboard?Math.max(0,viewport?.offsetTop||0):0;
+  root.style.setProperty('--app-height',Math.round(h)+'px');
+  root.style.setProperty('--app-top',Math.round(top)+'px');
+  root.toggleAttribute('data-keyboard',keyboard);
+  if(editing()&&(scrollX||scrollY))window.scrollTo({left:0,top:0,behavior:'instant'});
+  if(keyboard){
+   const input=document.activeElement;
+   if(input?.matches('input,textarea,[contenteditable="true"]')){
+    // Scroll only the containing form/list, never the page behind it.
+    for(let box=input.parentElement;box&&box!==document.body;box=box.parentElement){
+     if(!/(auto|scroll)/.test(getComputedStyle(box).overflowY)||box.scrollHeight<=box.clientHeight)continue;
+     const r=input.getBoundingClientRect(),b=box.getBoundingClientRect(),lo=Math.max(b.top,top)+12,hi=Math.min(b.bottom,top+h)-12;
+     if(r.bottom>hi)box.scrollTop+=r.bottom-hi;else if(r.top<lo)box.scrollTop-=lo-r.top;
+     break;
+    }
+   }
+  }
+ });};
+ window.addEventListener('resize',fit);window.addEventListener('scroll',fit,{passive:true});
+ viewport?.addEventListener('resize',fit);viewport?.addEventListener('scroll',fit);
+ document.addEventListener('focusin',fit);document.addEventListener('focusout',()=>setTimeout(fit,0));
+ window.addEventListener('message',e=>{const f=document.querySelector('.onboarding-screen iframe');if(e.origin!==location.origin||e.source!==f?.contentWindow||e.data?.type!=='aurora:input-focus')return;frameInput=e.data.focused===true;fit();});
+ window.addEventListener('pageshow',fit);fit();
 })();
 document.addEventListener('DOMContentLoaded',()=>{
  const phoneLandscape=matchMedia('(pointer:coarse) and (orientation:landscape) and (max-height:600px) and (max-width:1100px)');
@@ -520,7 +546,7 @@ window.AuroraMediaTransfer=(()=>{
 
 </script>
 <script>
-(function(){var lang='en';try{lang=localStorage.getItem('aurora-language')==='cs'?'cs':'en'}catch(e){}window.AURORA_LANGUAGE=lang;document.documentElement.lang=lang;var s=document.createElement('script');s.src='app-'+lang+'.js?v=20261005-ios4';document.body.appendChild(s)})();
+(function(){var lang='en';try{lang=localStorage.getItem('aurora-language')==='cs'?'cs':'en'}catch(e){}window.AURORA_LANGUAGE=lang;document.documentElement.lang=lang;var s=document.createElement('script');s.src='app-'+lang+'.js?v=20261005-ios5';document.body.appendChild(s)})();
 </script>
 
 </body>
