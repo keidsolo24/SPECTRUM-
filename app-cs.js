@@ -740,6 +740,7 @@ function applyBg(){
   const dm = (S.dim == null ? 50 : S.dim) / 100;
   const veil = isLight() ? `linear-gradient(rgba(246,238,228,${(.5 + dm*.4).toFixed(2)}),rgba(246,238,228,${(.66 + dm*.3).toFixed(2)}))` : `linear-gradient(rgba(14,10,8,${(.40 + dm*.50).toFixed(2)}),rgba(14,10,8,${(.34 + dm*.56).toFixed(2)}))`;
   const bg = $('.bg'); bg.style.background = veil + ',' + (W[S.wall] || W.ember) + ' center/cover';
+  document.body.style.background = bg.style.background; document.body.style.backgroundAttachment = 'fixed';
   const bl = +(S.blur || 0); bg.style.filter = bl ? `blur(${bl}px)` : ''; bg.style.transform = bl ? `scale(${1 + bl / 120})` : '';
 }
 function render(){
