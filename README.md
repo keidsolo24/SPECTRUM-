@@ -1,4 +1,4 @@
-# Aurora — test build, 5 October 2026
+# Aurora — test build, 6 October 2026
 
 Test app: https://keidsolo24.github.io/SPECTRUM-/
 
@@ -15,3 +15,8 @@ All files in this release folder belong in the repository root. Relative paths w
 English is the default interface language. Choose Czech in Settings → Language; the choice stays on this device. User-written card names, notes and other content are never translated. The tutorial video is in English.
 
 Testing: automated first-run/resume/returning flows, responsive layouts, simulated two-device sync, offline recovery, media round-trip, large-media chunk verification. Physical iOS/Android and real email delivery still need user acceptance testing.
+
+
+October 6 refinements: bounded mobile content above navigation; responsive Home summaries; centered empty Home/Spaces/Board states; natural media aspect ratios; standalone Board notes; four-line text previews with full details on open; item editing by tap or long press; explicit daily/weekly scheduling; neutral frosted-glass surfaces. Habit card items no longer repeat automatically. Existing data and cloud schema are preserved.
+
+Validation for this update: five viewport sizes (320×568 through 1440×900), complete mobile/desktop first-run flow, English/Czech note and media actions, editing/completion/weekly schedule checks, and simulated keyboard viewport changes in onboarding, card fields, add forms, settings and login. Physical iPhone standalone keyboard behavior still needs device confirmation.

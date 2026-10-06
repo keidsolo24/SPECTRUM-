@@ -178,6 +178,8 @@ function reactive(){
 
 // ---------- screens ----------
 function home(){
+  if(!S.cards.length&&!S.items.length&&!S.moments.length)return `<div class="scr">${top('')}<!--BD-->${emptyPanel(copy('Your space starts here.','Tvoje místo začíná tady.'),copy('Create a card for something that matters to you. Your overview will grow with it.','Vytvoř kartu pro něco, na čem ti záleží. Tady pak najdeš svůj přehled.'),'newcard',copy('Create your first card','Vytvořit první kartu'),`<button class="more empty-secondary" data-a="boardnote">${copy('Or keep a note','Nebo si uložit poznámku')}</button>`)}</div>`;
+
   const t = T(), list = sortDay(itemsOn(t), t), doneN = list.filter(i => isDone(i,t)).length;
   const timed = list.filter(i => i.time && !isDone(i,t)).sort((a,b) => tMin(a.time) - tMin(b.time));
   let nx = timed.find(i => tMin(i.time) >= nowMin() - 15) || timed[0] || list.find(i => !isDone(i,t));
@@ -186,7 +188,7 @@ function home(){
   if (nx) {
     const c = card(nx.card); let rel = '';
     if (nx.time) { const d = tMin(nx.time) - nowMin(); rel = d > 0 ? (d >= 60 ? 'za ' + Math.floor(d/60) + ' h ' + (d%60 ? d%60 + ' min' : '') : 'za ' + d + ' min') : 'ted'; }
-    nextHtml = `<button class="next glow nextbg" style="--c:#f0a44b" data-a="tog" data-id="${nx.id}" data-day="${t}" aria-label="Dalsi: ${esc(nx.t)}, klepni pro hotovo">
+    nextHtml = `<button class="next glow nextbg" style="--c:#f0a44b" data-a="edititem" data-id="${nx.id}" data-day="${t}" aria-label="Dalsi: ${esc(nx.t)}, klepni pro hotovo">
       <span class="rowh"><span class="cap" style="display:flex;align-items:center;gap:8px;color:var(--ink)"><span class="dot" style="--c:${c.color}"></span>${nx.time ? 'NEXT · ' + nx.time : 'DALSI'}</span><span class="sub" style="color:var(--ink);font-weight:600">${rel}</span></span>
       <span class="t">${esc(nx.t)}</span>
       <span style="display:flex;flex-direction:column;gap:7px"><span class="rowh sub"><span>${pad(new Date().getHours())}:${pad(new Date().getMinutes())}</span><span>22:00</span></span><span class="tbar"><i style="width:${Math.max(2, Math.min(100, (nowMin() - 420) / (900) * 100)).toFixed(0)}%"></i></span><span class="rowh sub"><span>${doneN} z ${list.length} hotovo</span><span>${esc(c.name)} · klepni = hotovo</span></span></span></button>`;
@@ -203,7 +205,7 @@ function home(){
     ${rest > 0 ? `<button class="more" data-a="planday" data-day="${t}"><span>+${rest} dalsi v Planu</span><span>↗</span></button>` : ''}</section>` : sugg();
   const nd = [];
   for (let k = 1; k <= 14 && nd.length < 3; k++) { const d = addD(t,k); const it = itemsOn(d).filter(i => !i.repeat)[0]; if (it) nd.push({d, it}); }
-  const tiles = `<div class="tiles">${nd.map(x => { const c = card(x.it.card); return `<button class="tile glow" style="--c:${c.color}" data-a="planday" data-day="${x.d}"><span class="sub">${dateShort(x.d)}</span><span class="x"><span class="dot" style="--c:${c.color}"></span>${esc(x.it.t)}</span></button>`; }).join('')}</div>`;
+  const tiles = `<div class="tiles">${nd.map(x => { const c = card(x.it.card); return `<button class="tile glow" style="--c:${c.color}" data-a="planday" data-day="${x.d}"><span class="sub">${dateShort(x.d)}</span><span class="x"><span class="dot" style="--c:${c.color}"></span><span class="preview-text">${esc(x.it.t)}</span></span></button>`; }).join('')}</div>`;
   const sun = new Date().getDay() === 0 && S.weekOn ? `<button class="react glass" style="--c:#9fb3ff" data-a="week"><span class="rd"></span><span class="rt">Nedele · tvuj tyden je pripraveny</span><span class="ra">Otevrit</span></button>` : '';
   const head = top(DN[new Date().getDay()] + ' ' + new Date().getDate() + ' ' + MN[new Date().getMonth()].slice(0,3));
   if (DESK()) {
@@ -212,10 +214,10 @@ function home(){
       wk.push(`<button class="wcol${k === 0 ? ' today' : ''}" data-a="planday" data-day="${d}" data-drop="${d}"><span class="rowh"><span class="sub" style="font-weight:600">${DN[dOf(d).getDay()]}</span><span style="font:800 24px/1 var(--f-head)">${dOf(d).getDate()}</span></span>${its.slice(0,4).map(i => `<span class="wchip" style="--c:${card(i.card).color};max-width:100%;padding:0 8px"><span class="dot"></span><span class="ell">${esc(i.t)}</span></span>`).join('')}${its.length > 4 ? `<span class="sub">+${its.length - 4}</span>` : ''}${!its.length ? '<span class="sub" style="color:var(--faint);margin:auto 0">volno</span>' : ''}</button>`); }
     const mini = S.cards.map(c => { const sub = c.type === 'habit' ? (streak(c) >= 2 ? streak(c) + ' dni v kuse' : gap(c) + ' dni nic') : (c.deadline ? 'deadline ' + dateShort(c.deadline) : 'projekt');
       return `<button class="card glow" style="--c:${c.color};min-height:120px" data-a="card" data-id="${c.id}"><span class="cap" style="color:var(--ink)">${c.type === 'habit' ? 'NAVYK' : 'PROJEKT'}</span><span class="nm" style="font-size:26px;margin-top:auto">${esc(c.name)}</span><span class="sub">${sub}</span></button>`; }).join('');
-    const todayL = list.length ? `<section class="panel glass hcell" aria-label="Dnes"><div class="rowh" style="padding-bottom:2px"><span class="h2">Dnes</span><span class="sub">${list.length - doneN} zbyva</span></div><div class="hlist">${list.map(i => row(i,t)).join('')}</div><button class="more" data-a="planday" data-day="${t}" data-more><span>Vse v Planu</span><span>↗</span></button></section>` : `<section class="panel glass hcell">${sugg()}</section>`;
+    const todayL = list.length ? `<section class="panel glass hcell" aria-label="Dnes"><div class="rowh" style="padding-bottom:2px"><span class="h2">Dnes</span><span class="sub">${list.length - doneN} zbyva</span></div><div class="hlist">${list.map(i => row(i,t)).join('')}</div><button class="more" data-a="planday" data-day="${t}" data-more><span>Vse v Planu</span><span>↗</span></button></section>` : (sugg()?`<section class="panel glass hcell">${sugg()}</section>`:'');
     const wrows = []; for (let k = 0; k < 7; k++) { const d = addD(t,k), its = sortDay(itemsOn(d).filter(i => !i.repeat), d);
       wrows.push(`<button class="hwrow${k === 0 ? ' today' : ''}" data-a="planday" data-day="${d}" data-drop="${d}"><span class="hwd"><span class="sub" style="font-weight:600">${DN[dOf(d).getDay()]}</span><b>${dOf(d).getDate()}</b></span><span class="wchips">${its.slice(0,3).map(i => `<span class="wchip" style="--c:${card(i.card).color}"><span class="dot"></span><span class="ell">${i.time ? i.time + ' ' : ''}${esc(i.t)}</span></span>`).join('')}${!its.length ? '<span class="sub" style="color:var(--faint)">volno</span>' : ''}</span>${its.length > 3 ? `<span class="sub" style="font-weight:600">+${its.length - 3}</span>` : ''}</button>`); }
-    return `<div class="scr">${head}<!--BD--><div class="hgrid"><div class="dcol">${nextHtml}${rHtml || sun}</div><div class="cgrid">${mini}</div>${todayL}<section class="panel glass hcell"><div class="rowh" style="padding-bottom:4px"><span class="h2">Tento tyden</span><button class="sub" data-a="tab" data-v="plan">Plán ↗</button></div><div class="hweek">${wrows.join('')}</div></section></div></div>`;
+    return `<div class="scr">${head}<!--BD--><div class="hgrid"><div class="dcol">${nextHtml}${rHtml || sun}</div><div class="cgrid">${mini}</div>${todayL}${S.items.some(i=>i.repeat||(i.date&&i.date>=t&&i.date<=addD(t,6)))?`<section class="panel glass hcell"><div class="rowh" style="padding-bottom:4px"><span class="h2">Tento tyden</span><button class="sub" data-a="tab" data-v="plan">Plán ↗</button></div><div class="hweek">${wrows.join('')}</div></section>`:''}</div></div>`;
   }
   return `<div class="scr">${head}<!--BD-->${nextHtml}${rHtml}${sun}${today}${tiles}</div>`;
 }
@@ -243,7 +245,7 @@ function spaces(){
       const cells = []; for (let q = 55; q >= 0; q--) { const d = addD(T(),-q); cells.push(`<span style="${set.has(d) ? 'background:' + c.color : ''}"></span>`); }
       const it = its[0], dt = it && it.doneDates.includes(T());
       return `<article class="slide glow" style="--c:${c.color}">${head}
-        <span class="sub" style="margin-top:-4px">${s >= 2 ? s + ' dni v kuse' : g >= 2 ? g + ' dni nic — dej si 10 minut' : 'kazdy den'}</span>
+        <span class="sub" style="margin-top:-4px">${s >= 2 ? s + ' dni v kuse' : g >= 2 ? g + ' dni nic — dej si 10 minut' : its.length ? copy(its[0].repeatRule==='weekly'?'Every week':'Every day',its[0].repeatRule==='weekly'?'Každý týden':'Každý den') : copy('Your habit · at your pace','Tvůj návyk · tvým tempem')}</span>
         <div class="stats"><div class="stat"><b>${s}</b><span class="sub">serie</span></div><div class="stat"><b>${Math.round(m/30*100)} %</b><span class="sub">30 dni</span></div></div>
         <div class="hm7">${cells.join('')}</div>
         ${wdots(c)}
@@ -259,6 +261,7 @@ function spaces(){
       <button class="more" style="margin-top:auto" data-a="card" data-id="${c.id}"><span>Otevrit kartu · ukoly, poznamky, momenty</span><span>↗</span></button></article>`;
   });
   slides.push(`<button class="slide add" data-a="newcard">+ Nova karta</button>`);
+  if(!N)return `<div class="scr">${top('')}<h1 class="h1">Spaces</h1><!--BD-->${emptyPanel(copy('Make room for something.','Místo pro něco tvého.'),S.cards.length?copy('No cards in this filter.','V tomto filtru nejsou karty.'):copy('A project or a habit — start with one card.','Projekt nebo návyk — začni jednou kartou.'),S.cards.length?'sf':'newcard',S.cards.length?copy('Show all cards','Všechny karty'):copy('Create a card','Vytvořit kartu'))}</div>`;
   const I = Math.max(0, Math.min(V.deckI || 0, slides.length - 1)); V.deckI = I;
   const F = [['all','Vse'],['habit','Navyky'],['project','Projekty']];
   const needToday = S.cards.filter(c => todayOf(c).some(i => !isDone(i, T()))).length;
@@ -291,8 +294,8 @@ function cardScreen(id){
   // today list for this card
   const todayIts = sortDay(itemsOn(t).filter(i => i.card === id), t);
   const tdDone = todayIts.filter(i => isDone(i,t)).length;
-  const citem = (i) => { const dn = isDone(i,t), sub = i.repeat ? (streakItem(i) >= 2 ? streakItem(i) + ' dni v kuse' : (i.repeatRule === 'weekly' ? 'kazdy tyden' : 'kazdy den')) : (i.time || 'dnes'); return `<button class="citem${dn ? ' done' : ''}" style="--c:${c.color}" data-a="tog" data-id="${i.id}" data-day="${t}" aria-pressed="${dn}"><span class="chk">${dn ? '✓' : ''}</span><span class="it" style="flex-grow:1">${esc(i.t)}</span><span class="sub">${sub}</span></button>`; };
-  const nextStep = !isH ? tasks.filter(i => !i.done).sort((a,b) => (a.date || '9999').localeCompare(b.date || '9999'))[0] : null;
+  const citem = i => row(i,t);
+  const nextStep = tasks.filter(i => !i.done).sort((a,b) => (a.date || '9999').localeCompare(b.date || '9999'))[0];
   const left = `<article class="cdleft glow" style="--c:${c.color}">
     <span class="cap" style="display:flex;gap:8px;align-items:center;color:var(--ink)"><span class="dot" style="--c:${c.color}"></span>${isH ? 'NAVYK' : 'PROJEKT'}${!isH && c.deadline ? ' · deadline ' + dateShort(c.deadline) : ''}</span>
     <span class="nm">${esc(c.name)}</span>
@@ -398,7 +401,7 @@ function plan(){
       <span class="wchips">${its.slice(0,2).map(i => `<span class="wchip" style="--c:${card(i.card).color}"><span class="dot"></span><span class="ell">${i.time ? i.time + ' ' : ''}${esc(i.t)}</span></span>`).join('')}${!its.length ? `<span class="sub" style="color:var(--faint)">${hab ? hab + ' navyky' : 'volno'}</span>` : ''}</span>
       ${its.length > 2 ? `<span class="sub" style="font-weight:600">+${its.length - 2}</span>` : ''}</button>`); }
     if (DESK()) { const cols = []; for (let k = 0; k < 7; k++) { const d = addD(t,k), its = sortDay(itemsOn(d), d);
-      cols.push(`<div class="wcol glass${k === 0 ? ' today' : ''}" style="min-height:420px" data-drop="${d}"><button class="rowh" data-a="pdl" data-day="${d}"><span class="sub" style="font-weight:600">${DN[dOf(d).getDay()]}</span><span style="font:800 28px/1 var(--f-head)">${dOf(d).getDate()}</span></button><div class="wlist">${its.map(i => `<button class="dchip${isDone(i,d) ? ' done' : ''}" style="--c:${card(i.card).color}"${i.repeat ? '' : ` draggable="true" data-drag="${i.id}"`} data-a="tog" data-id="${i.id}" data-day="${d}"><span class="it" style="font-size:14px">${esc(i.t)}</span><span class="sub" style="font-size:11.5px">${i.time ? i.time + ' · ' : ''}${i.card ? esc(card(i.card).name) : 'bez karty'}</span></button>`).join('')}</div><button class="addday" data-a="plusday" data-day="${d}">+ pridat</button></div>`); }
+      cols.push(`<div class="wcol glass${k === 0 ? ' today' : ''}" style="min-height:420px" data-drop="${d}"><button class="rowh" data-a="pdl" data-day="${d}"><span class="sub" style="font-weight:600">${DN[dOf(d).getDay()]}</span><span style="font:800 28px/1 var(--f-head)">${dOf(d).getDate()}</span></button><div class="wlist">${its.map(i => `<button class="dchip${isDone(i,d) ? ' done' : ''}" style="--c:${card(i.card).color}"${i.repeat ? '' : ` draggable="true" data-drag="${i.id}"`} data-a="edititem" data-id="${i.id}" data-day="${d}"><span class="it" style="font-size:14px">${esc(i.t)}</span><span class="sub" style="font-size:11.5px">${i.time ? i.time + ' · ' : ''}${i.card ? esc(card(i.card).name) : 'bez karty'}</span></button>`).join('')}</div><button class="addday" data-a="plusday" data-day="${d}">+ pridat</button></div>`); }
       body = `<div class="week7 big">${cols.join('')}</div><button class="react glass" style="--c:#9fb3ff;max-width:520px" data-a="week"><span class="rd"></span><span class="rt">Shrnuti minuleho tydne</span><span class="ra">Tvůj týden</span></button>`; }
     else body = `<div class="wk">${rows.join('')}</div><button class="react glass" style="--c:#9fb3ff" data-a="week"><span class="rd"></span><span class="rt">Shrnuti minuleho tydne</span><span class="ra">Tvůj týden</span></button>`;
   }
@@ -572,9 +575,9 @@ function openAdd(ctx){
   const t = T(); const cur = V.stack[V.stack.length-1];
   A = {t:'', card:null, when:'today', date:t, time:'', repeat:false, from:'Z Domů', mode:'item'};
   if (ctx && ctx.day) { A.when = ctx.day === t ? 'today' : 'day'; A.date = ctx.day; A.from = 'Z Planu · ' + dayTitle(ctx.day); }
-  else if (cur && cur.s === 'card') { A.card = cur.id; A.when = 'none'; A.from = 'Z karty ' + card(cur.id).name; if (card(cur.id).type === 'habit') { A.when = 'rep'; } }
+  else if (cur && cur.s === 'card') { A.card = cur.id; A.when = 'none'; A.from = 'Z karty ' + card(cur.id).name;  }
   else if (V.tab === 'plan') { A.date = V.planView === 2 ? V.monthSel : V.planDay; A.when = A.date === t ? 'today' : 'day'; A.from = 'Z Planu · ' + dayTitle(A.date); }
-  else if (V.tab === 'board') { A.mode = 'moment'; A.from = 'Z Boardu'; }
+  else if (V.tab === 'board') { A.mode = 'note'; A.from = 'Z Boardu'; }
   else if (V.tab === 'spaces') { A.when = 'none'; A.from = 'Ze Prostory'; }
   drawAdd(); const sc = $('#scrim'), sh = $('#sheet'); sc.hidden = false; sh.hidden = false;
   if (!sh.dataset.sw) { sh.dataset.sw = 1; let y0 = null, dy = 0;
@@ -584,7 +587,7 @@ function openAdd(ctx){
     sh.addEventListener('pointerup', end); sh.addEventListener('pointercancel', end); }
   requestAnimationFrame(() => { sc.classList.add('show'); sh.classList.add('show'); setTimeout(() => { const i = $('#add-t'); i && i.focus(); }, 300); });
 }
-function closeAdd(){ WN = null; if (V) V.edit = null; const sc = $('#scrim'), sh = $('#sheet'); sc.classList.remove('show'); sh.classList.remove('show'); setTimeout(() => { sc.hidden = true; sh.hidden = true; }, 320); A = null; }
+function closeAdd(){ itemDraft=null; if(document.activeElement?.closest('#sheet'))document.activeElement.blur(); WN = null; if (V) V.edit = null; const sc = $('#scrim'), sh = $('#sheet'); sc.classList.remove('show'); sh.classList.remove('show'); setTimeout(() => { sc.hidden = true; sh.hidden = true; }, 320); A = null; }
 function suggestCard(txt){ const words = txt.toLowerCase().split(/[^a-z0-9]+/).filter(w => w.length >= 4); if (!words.length) return null; let best = null, sc = 0;
   for (const c of S.cards) { let n = 0; const nm = c.name.toLowerCase(); words.forEach(w => { if (nm.includes(w)) n += 3; }); S.items.filter(i => i.card === c.id).forEach(i => { const iw = i.t.toLowerCase(); words.forEach(w => { if (iw.includes(w)) n += 1; }); }); if (n > sc) { sc = n; best = c; } }
   return best; }
@@ -623,10 +626,10 @@ function drawAdd(){
 }
 function saveAdd(){
   const t = (A.t || '').trim();
-  if (A.mode === 'moment') {
+  if (A.mode === 'moment' || A.mode === 'note') {
     if (!A.src && !A.video && !t) { toast('Pridej fotku, video nebo poznamku'); return; }
     const palettes = [['#1a2a4a','#6f8cff','#f0a44b'],['#3a1a2a','#ff5c9a','#f2b08a'],['#1c2c24','#3fbf7f','#d9e8e0']];
-    const mo = {id:uid(), d:T(), card:A.card, note:t, art:palettes[S.moments.length % 3], h:A.src || A.video ? 230 : 180}; if (A.blob || A.src) { const blob = A.blob || d2b(A.src), key = 'm' + uid() + uid(); mo.img = key; mo.kind = A.video ? 'video' : 'image'; URLS.set(key, A.video || URL.createObjectURL(blob)); DB.set('images', key, blob).catch(() => toast('Soubor se nepodarilo ulozit')); } S.moments.unshift(mo);
+    const mo = {id:uid(), d:T(), card:A.card, note:t, art:palettes[S.moments.length % 3], ratio:A.mode==='moment'?A.ratio||null:null}; if (A.mode==='moment' && (A.blob || A.src)) { const blob = A.blob || d2b(A.src), key = 'm' + uid() + uid(); mo.img = key; mo.kind = A.video ? 'video' : 'image'; URLS.set(key, A.video || URL.createObjectURL(blob)); DB.set('images', key, blob).catch(() => toast('Soubor se nepodarilo ulozit')); } S.moments.unshift(mo);
     const wasVideo = !!A.video; save(); closeAdd(); go('board'); toast(wasVideo ? 'Video ulozeno' : 'Moment ulozen'); return;
   }
   if (!t) { toast('Napis, co pridat'); $('#add-t').focus(); return; }
@@ -634,11 +637,11 @@ function saveAdd(){
   if (P.date && A.when !== 'rep') { A.when = P.date === T() ? 'today' : 'day'; A.date = P.date; if (P.time) A.time = P.time; }
   if (!A.card && A.when === 'none') A.when = 'today';
   const it = {id:uid(), t: P.date && P.clean ? P.clean : t, card:A.card};
-  if (A.when === 'rep') { it.repeat = true; it.doneDates = []; it.from = T(); }
+  if (A.when === 'rep') { it.repeat = true; it.doneDates = []; it.from = A.date || T(); it.repeatRule=A.repeatRule||'daily';it.repeatDay=dOf(it.from).getDay(); }
   else if (A.when === 'today') it.date = T();
   else if (A.when === 'tom') it.date = addD(T(),1);
   else if (A.when === 'day') it.date = A.date;
-  if (A.time && it.date) it.time = A.time;
+  if (A.time && (it.date || it.repeat)) it.time = A.time;
   S.items.push(it); save();
   const where = it.repeat ? 'kazdy den' : it.date ? (it.date === T() ? 'na dnes' : dateShort(it.date)) : 'do karty';
   closeAdd(); render(); toast('Ulozeno ' + where + (it.card ? ' · ' + card(it.card).name : ''));
@@ -661,7 +664,7 @@ function drawViewer(){
   const m = S.moments.find(x => x.id === V.vlist[V.vi]); if (!m) { closeViewer(); return; }
   const c = card(m.card), msrc = picOf(m);
   const fit = `object-fit:${V.fit}`;
-  const art = isVid(m) ? `<video class="media" id="vvid" src="${vidOf(m)}" playsinline autoplay loop ${V.muted ? 'muted' : ''} style="${fit}"></video>` : msrc ? `<img class="media" src="${msrc}" alt="${esc(m.note || 'Moment')}" style="${fit}" draggable="false">` : `<span class="media" style="display:grid;place-items:center;padding:40px;box-sizing:border-box;background:linear-gradient(160deg,color-mix(in srgb,${c.color} 50%,#1c1513),#1c1513 90%);font:800 34px/1.1 var(--f-head);text-align:center">${esc(m.note)}</span>`;
+  const art = isVid(m) ? `<video class="media" id="vvid" src="${vidOf(m)}" playsinline autoplay loop ${V.muted ? 'muted' : ''} style="${fit}"></video>` : msrc ? `<img class="media" src="${msrc}" alt="${esc(m.note || 'Moment')}" style="${fit}" draggable="false">` : `<span class="media note-reader" style="display:grid;place-items:center;padding:40px;box-sizing:border-box;background:linear-gradient(160deg,color-mix(in srgb,${c.color} 50%,#1c1513),#1c1513 90%);font:800 34px/1.1 var(--f-head);text-align:center">${esc(m.note)}</span>`;
   const typ = isVid(m) ? 'Video' : msrc ? 'Foto' : 'Poznamka', dt = m.d ? dateShort(m.d) : 'Dnes', n = V.vlist.length;
   $('#over').innerHTML = `<div class="fv${V.hideUI ? ' hideui' : ''}" id="viewer" role="dialog" aria-label="Moment">${art}
     <div class="ov ovt"><span style="display:flex;flex-direction:column;gap:2px;flex-grow:1;min-width:0;text-shadow:0 1px 6px rgba(0,0,0,.5)"><span style="display:flex;align-items:center;gap:8px;font-size:16px;font-weight:600;--c:${c.color}">${m.card ? '<span class="dot"></span>' + esc(c.name) : 'Bez karty'}</span><span style="font-size:13px;opacity:.8">${dt} · ${typ}${m.pin ? ' · pripnuto' : ''}${n > 1 ? ' · ' + (V.vi + 1) + ' / ' + n : ''}</span></span>
@@ -671,7 +674,7 @@ function drawViewer(){
       ${V.moveOpen ? `<div class="wrap" style="justify-content:center">${[['', 'Bez karty', null], ...S.cards.map(k => [k.id, k.name, k.color])].map(x => `<button class="gb" style="${x[2] ? '--c:' + x[2] : ''};${(m.card || '') === x[0] ? 'background:#f6ecdc;color:#1c1513' : ''}" data-a="vmove" data-v="${x[0]}">${x[2] ? '<span class="dot"></span>' : ''}${esc(x[1])}</button>`).join('')}</div>` : ''}
       <div style="display:flex;gap:8px;justify-content:center"><button class="gb" data-a="vpin">${m.pin ? 'Odepnout' : 'Pripnout'}</button><button class="gb" data-a="vmovetog">Do karty</button><button class="gb" data-a="delmom" data-id="${m.id}" style="color:#ffb3a0">Smazat</button></div></div></div>`;
   const vi = $('#viewer'); let x0 = null, y0 = 0, lastTap = 0, dx = 0, dy = 0, tapT = null;
-  vi.addEventListener('pointerdown', e => { if (e.target.closest('.gb,.vnote')) return; x0 = e.clientX; y0 = e.clientY; dx = dy = 0; });
+  vi.addEventListener('pointerdown', e => { if (e.target.closest('.gb,.vnote,.note-reader')) return; x0 = e.clientX; y0 = e.clientY; dx = dy = 0; });
   vi.addEventListener('pointermove', e => { if (x0 === null) return; dx = e.clientX - x0; dy = e.clientY - y0; const el = vi.querySelector('.media'); if (!el) return; el.style.transition = 'none'; if (Math.abs(dy) > Math.abs(dx) && dy > 0) { el.style.transform = `translateY(${dy}px) scale(${1 - Math.min(dy, 300) / 1200})`; vi.style.background = `rgba(0,0,0,${Math.max(.2, 1 - dy / 400)})`; } else el.style.transform = `translateX(${dx}px)`; });
   const up = e => { if (x0 === null) return; x0 = null; const el = vi.querySelector('.media'); if (el) el.style.transition = '';
     if (dy > 110 && Math.abs(dy) > Math.abs(dx)) { closeViewer(); return; }
@@ -734,7 +737,7 @@ function fitHome(){ const bd = $('#screen .bd.static'); if (!bd) return;
     if (!mo) { panel.insertAdjacentHTML('beforeend', `<button class="more" data-a="planday" data-day="${T()}"><span></span><span>↗</span></button>`); mo = panel.querySelector('.more'); }
     mo.firstElementChild.textContent = '+' + n + ' dalsi v Planu'; }
 }
-window.addEventListener('resize', () => { if (V.tab === 'home' && !V.stack.length) render(); });
+/* Viewport geometry is managed without rebuilding focused fields. */
 function applyBg(){
   const W = {'aurora-blue':'url(landing-blue.svg)',ember:`url(${WALL})`, aurora:'linear-gradient(160deg,#4a62d8,#7b4fd6 50%,#d24f97)', forest:'linear-gradient(160deg,#2f5a40,#101a14)', custom: S.customWall ? `url(${S.customWall})` : `url(${WALL})`};
   const dm = (S.dim == null ? 50 : S.dim) / 100;
@@ -760,17 +763,17 @@ function render(){
   if (!cur && V.tab === 'home') html = html.replace('<div class="bd">', '<div class="bd static">');
   if (cur && cur.s === 'card' && DESK()) html = html.replace('<div class="bd">', '<div class="bd fitcard">');
   if (!cur && V.tab === 'plan' && V.planView === 1 && DESK()) html = html.replace('<div class="bd">', '<div class="bd fitweek">');
-  $('#screen').innerHTML = html; $('#screen').dataset.k = cur ? cur.s + (cur.id || '') : V.tab;
+  $('#screen').dataset.view=cur?cur.s:V.tab;$('#screen').innerHTML = html; $('#screen').dataset.k = cur ? cur.s + (cur.id || '') : V.tab;
   if (same && $('#screen .bd')) $('#screen .bd').scrollTop = keep;
-  document.querySelectorAll('#screen .item[data-a="tog"]').forEach(el => { const it = S.items.find(i => i.id === el.dataset.id); if (!it) return;
+  document.querySelectorAll('#screen .item[data-id]').forEach(el => { const it = S.items.find(i => i.id === el.dataset.id); if (!it) return;
     let x0 = null, dx = 0; el.style.touchAction = 'pan-y';
-    el.addEventListener('pointerdown', e => { x0 = e.clientX; dx = 0; el.style.transition = 'none'; });
+    el.addEventListener('pointerdown', e => { if(e.target.closest('.check-hit,.item-menu'))return;x0 = e.clientX; dx = 0; el.style.transition = 'none'; });
     el.addEventListener('pointermove', e => { if (x0 === null) return; dx = Math.min(0, e.clientX - x0); if (dx < -6) { el.style.transform = `translateX(${dx}px)`; el.style.boxShadow = `inset ${-dx}px 0 0 -${-dx}px transparent`; el.style.background = dx < -70 ? 'linear-gradient(270deg,rgba(111,140,255,.35),transparent 60%)' : 'linear-gradient(270deg,rgba(111,140,255,.15),transparent 60%)'; } });
     const end = () => { if (x0 === null) return; x0 = null; el.style.transition = 'transform .25s'; el.style.transform = ''; el.style.background = '';
       if (dx < -70 && !it.repeat) { it.date = addD(it.date && it.date >= T() ? it.date : T(), 1); it.done = false; save(); const stop = ev => { ev.stopPropagation(); ev.preventDefault(); }; document.addEventListener('click', stop, {capture:true, once:true}); setTimeout(() => { document.removeEventListener('click', stop, {capture:true}); render(); toast('Presunuto na ' + dateShort(it.date)); }, 60); }
       else if (dx < -8) { const stop = ev => { ev.stopPropagation(); ev.preventDefault(); }; document.addEventListener('click', stop, {capture:true, once:true}); setTimeout(() => document.removeEventListener('click', stop, {capture:true}), 60); } };
     el.addEventListener('pointerup', end); el.addEventListener('pointercancel', end); });
-  fitHome();
+  fitHome(); requestAnimationFrame(fitHome);
   const stk = $('#stack'); if (stk) { const front = [...stk.children].find(x => x.style.zIndex === '10' || /z-index:10/.test(x.getAttribute('style') || ''));
     if (front) { let x0 = null, dx = 0, moved = false;
       front.addEventListener('pointerdown', e => { x0 = e.clientX; dx = 0; moved = false; front.style.transition = 'none'; });
@@ -810,7 +813,7 @@ document.addEventListener('click', e => {
     case 'ms': V.monthSel = d.day; render(); break;
     case 'mo': V.monthOff += +d.v; render(); break;
     case 'showall': V.showAll = !V.showAll; render(); break;
-    case 'sf': V.spacesF = d.v; V.deckI = 0; render(); break;
+    case 'sf': V.spacesF = d.v || 'all'; V.deckI = 0; render(); break;
     case 'deckgo': V.deckI = +d.v; render(); break;
     case 'card': V.cardTab = 0; push({s:'card', id:d.id}); break;
     case 'ctab': V.cardTab = +d.v; render(); break;
@@ -885,13 +888,13 @@ document.addEventListener('change', e => {
     const f = e.target.files[0];
     if (f.size > 120 * 1024 * 1024) { toast('Video je vetsi nez 120 MB'); return; }
     const url = URL.createObjectURL(f), v = document.createElement('video'); v.preload = 'metadata';
-    v.onloadedmetadata = () => { if (v.duration > 61) { toast('Video je delsi nez 60 s'); URL.revokeObjectURL(url); return; } A.video = url; A.blob = f; A.src = null; A.mode = 'moment'; drawAdd(); };
-    v.onerror = () => { A.video = url; A.blob = f; A.src = null; A.mode = 'moment'; drawAdd(); };
+    v.onloadedmetadata = () => { if (v.duration > 61) { toast('Video je delsi nez 60 s'); URL.revokeObjectURL(url); return; } A.video = url; A.blob = f; A.src = null; A.ratio=v.videoWidth/v.videoHeight||null;A.mode = 'moment'; drawAdd(); };
+    v.onerror = () => { A.video = url; A.blob = f; A.src = null; A.ratio=v.videoWidth/v.videoHeight||null;A.mode = 'moment'; drawAdd(); };
     v.src = url; return;
   }
   if (e.target.id === 'add-file' && e.target.files[0]) {
     const f = e.target.files[0], r = new FileReader();
-    r.onload = () => { const img = new Image(); img.onload = () => { const s = Math.min(1, 2000 / Math.max(img.width, img.height)); const cv = document.createElement('canvas'); cv.width = img.width * s; cv.height = img.height * s; cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height); A.src = cv.toDataURL('image/jpeg', .85); A.blob = null; A.video = null; A.mode = 'moment'; drawAdd(); }; img.src = r.result; };
+    r.onload = () => { const img = new Image(); img.onload = () => { const s = Math.min(1, 2000 / Math.max(img.width, img.height)); const cv = document.createElement('canvas'); cv.width = img.width * s; cv.height = img.height * s; cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height); A.ratio=img.width/img.height; A.src = cv.toDataURL('image/jpeg', .85); A.blob = null; A.video = null; A.mode = 'moment'; drawAdd(); }; img.src = r.result; };
     r.readAsDataURL(f);
   }
 });
@@ -899,13 +902,13 @@ document.addEventListener('submit', e => {
   const f = e.target; if (!f.t || !f.dataset.f) return; e.preventDefault(); const v = (f.t.value || '').trim(); if (!v) return;
   const c = S.cards.find(x => x.id === f.dataset.card); if (!c) return;
   if (f.dataset.f === 'addtask') { S.items.push({id:uid(), t:v, card:c.id}); toast('Ukol pridan · bez data'); }
-  if (f.dataset.f === 'addhabit') { S.items.push({id:uid(), t:v, card:c.id, repeat:true, doneDates:[], from:T()}); toast('Navyk pridan · kazdy den'); }
+  if (f.dataset.f === 'addhabit') { S.items.push({id:uid(), t:v, card:c.id}); toast(copy('Added to card · schedule it in Plan','Přidáno do karty · naplánuj v Planu')); }
   if (f.dataset.f === 'addnote') { c.notes.push(v); toast('Poznamka ulozena'); }
-  save(); render(); const inp = document.getElementById((f.dataset.f === 'addtask' ? 'nt-' : 'nn-') + c.id); inp && inp.focus();
+  save(); render(); const inp = document.getElementById((f.dataset.f === 'addnote' ? 'nn-' : 'nt-') + c.id); inp && inp.focus();
 });
 document.addEventListener('keydown', e => {
-  if (!A && !$('#over').innerHTML && !/INPUT|TEXTAREA/.test(document.activeElement.tagName) && !e.metaKey && !e.ctrlKey) { const k = e.key.toLowerCase(); if (k === 'n') { e.preventDefault(); openAdd(); return; } const tb = {'1':'home','2':'spaces','3':'board','4':'plan'}[k]; if (tb) { go(tb); return; } }
-  if ($('#over').innerHTML && V.vlist && (e.key === 'ArrowRight' || e.key === 'ArrowLeft')) { V.vi = Math.max(0, Math.min(V.vlist.length - 1, V.vi + (e.key === 'ArrowRight' ? 1 : -1))); drawViewer(); return; } if (e.key === 'Escape') { if (A) closeAdd(); else if ($('#over').innerHTML) closeViewer(); } if (e.key === 'Enter' && A && e.target.id === 'add-t') saveAdd(); });
+  if (!A && !itemDraft && !$('#over').innerHTML && !/INPUT|TEXTAREA/.test(document.activeElement.tagName) && !e.metaKey && !e.ctrlKey) { const k = e.key.toLowerCase(); if (k === 'n') { e.preventDefault(); openAdd(); return; } const tb = {'1':'home','2':'spaces','3':'board','4':'plan'}[k]; if (tb) { go(tb); return; } }
+  if ($('#over').innerHTML && V.vlist && (e.key === 'ArrowRight' || e.key === 'ArrowLeft')) { V.vi = Math.max(0, Math.min(V.vlist.length - 1, V.vi + (e.key === 'ArrowRight' ? 1 : -1))); drawViewer(); return; } if (e.key === 'Escape') { if (A || itemDraft || V.edit) {itemDraft=null;closeAdd();} else if ($('#over').innerHTML) closeViewer(); } if (e.key === 'Enter' && A && e.target.id === 'add-t' && e.target.tagName !== 'TEXTAREA') saveAdd(); });
 
 document.addEventListener('dragstart', e => { const el = e.target.closest && e.target.closest('[data-drag]'); if (!el) return; e.dataTransfer.setData('text/plain', el.dataset.drag); e.dataTransfer.effectAllowed = 'move'; });
 document.addEventListener('dragover', e => { const t = e.target.closest && e.target.closest('[data-drop]'); if (!t) return; e.preventDefault(); document.querySelectorAll('[data-drop].over').forEach(x => x !== t && x.classList.remove('over')); t.classList.add('over'); });
@@ -1042,6 +1045,102 @@ const AuroraCloud=(()=>{
  addEventListener('online',()=>queue(100));setInterval(()=>{if(user&&!blocked&&!document.hidden)sync()},8000);
  return {start,sync,act,refresh,status:()=>last,isConnected:()=>!!user,email:()=>user?.email||'',mediaIds};
 })();
+
+// Shared refinements. Included inside the existing app closure in both languages.
+const copy = (en,cs) => window.AURORA_LANGUAGE === 'cs' ? cs : en;
+function fitHome(){
+ const bd=document.querySelector('#screen .bd.static');if(!bd||DESK()||document.documentElement.hasAttribute('data-keyboard'))return;
+ bd.classList.remove('home-compact');
+ const panel=bd.querySelector('section[data-rest]'),rows=panel?[...panel.querySelectorAll('.item')]:[];
+ rows.forEach(e=>e.hidden=false);
+ let more=panel?.querySelector('.more'),rest=Number(panel?.dataset.rest||0),hidden=0;
+ const update=()=>{const count=rest+hidden;if(count&&!more){panel.insertAdjacentHTML('beforeend',`<button class="more" data-a="planday" data-day="${T()}"><span></span><span>↗</span></button>`);more=panel.querySelector('.more');}if(more){more.hidden=!count;more.firstElementChild.textContent=copy(`+${count} more in Plan`,`+${count} dalších v Planu`);}};
+ update();const overflow=()=>bd.scrollHeight>bd.clientHeight+1;
+ while(overflow()&&rows.length-hidden>1){rows[rows.length-1-hidden].hidden=true;hidden++;update();}
+ if(overflow())bd.classList.add('home-compact');
+ while(overflow()&&rows.length-hidden>0){rows[rows.length-1-hidden].hidden=true;hidden++;update();}
+}
+window.addEventListener('resize',()=>requestAnimationFrame(fitHome));
+function emptyPanel(title,detail,action,label,extra=''){
+ return `<section class="empty-state"><span class="empty-symbol" aria-hidden="true">${ic(V.tab==='board'?'board':V.tab==='spaces'?'spaces':'plus',30)}</span><h2>${title}</h2><p>${detail}</p><button class="cta" data-a="${action}">${label}</button>${extra}</section>`;
+}
+function row(it,day,opts={}){
+ const c=card(it.card),done=isDone(it,day),meta=opts.meta!==undefined?opts.meta:(it.card?esc(c.name):copy('No card','Bez karty'))+(it.repeat?' · '+copy('habit','návyk'):'');
+ return `<div class="item${done?' done':''}" style="--c:${c.color}" data-id="${it.id}" data-day="${day}"${DESK()&&!it.repeat?` draggable="true" data-drag="${it.id}"`:''}>
+ <button class="check-hit" data-a="tog" data-id="${it.id}" data-day="${day}" aria-pressed="${done}" aria-label="${esc(copy('Complete: ','Splnit: ')+it.t)}"><span class="chk">${done?'✓':''}</span></button>
+ <button class="item-open ibody" data-a="edititem" data-id="${it.id}" aria-label="${esc(copy('Edit: ','Upravit: ')+it.t)}"><span class="it">${esc(it.t)}</span><span class="meta"><span class="dot"></span>${meta}</span></button>
+ <button class="item-menu" data-a="edititem" data-id="${it.id}" aria-label="${copy('Edit item','Upravit položku')}">${it.time?esc(it.time):opts.whenBtn?(it.repeat?copy('Repeat','Opakování'):it.date?dateShort(it.date):'+ '+copy('when','kdy')):'⋯'}</button></div>`;
+}
+function momHtml(m){
+ const c=card(m.card),src=picOf(m),media=isVid(m)||!!src;
+ const art=isVid(m)?`<video src="${vidOf(m)}" muted playsinline preload="metadata" ${m.ratio?`style="aspect-ratio:${m.ratio}"`:''}></video>`:src?`<img src="${src}" alt="${esc(m.note||copy('Moment','Moment'))}" loading="lazy"${m.ratio?` style="aspect-ratio:${m.ratio}"`:''}>`:`<span class="notep" style="--c:${c.color}"><span class="preview-text">${esc(m.note)}</span></span>`;
+ return `<button class="mom${media?' has-media':' note-only'}" data-a="view" data-id="${m.id}">${art}${m.card?`<span class="tag">${esc(c.name)}</span>`:''}${isVid(m)?'<span class="tag media-tag">▶ video</span>':''}${media&&m.note?`<span class="cap2"><span class="preview-text">${esc(m.note)}</span></span>`:''}</button>`;
+}
+function board(){
+ const f=V.boardF||'all',used=S.cards.filter(c=>S.moments.some(m=>m.card===c.id)),list=boardList();
+ const chips=[['all',copy('All','Vše'),null],...used.map(c=>[c.id,c.name,c.color]),...(S.moments.some(m=>!m.card)?[['none',copy('No card','Bez karty'),null]]:[])];
+ return `<div class="scr">${top('')}<h1 class="h1">Board</h1>${S.moments.length?`<div class="board-filters">${chips.map(x=>`<button class="pill${f===x[0]?' on':''}" data-a="bf" data-v="${x[0]}" style="--c:${x[2]||'transparent'}">${x[2]?'<span class="dot"></span>':''}${esc(x[1])}</button>`).join('')}</div>`:''}<!--BD-->${list.length?`<div class="masonry">${list.map(momHtml).join('')}</div>`:emptyPanel(copy('A place for your ideas.','Místo pro tvoje nápady.'),copy('Keep a note, a photo or a moment. No dates needed.','Ulož poznámku, fotku nebo moment. Bez data.'),'boardnote',copy('Add a note','Přidat poznámku'),`<button class="more empty-secondary" data-a="boardmedia">${copy('Add a photo or video','Přidat fotku nebo video')}</button>${f!=='all'?`<button class="more empty-secondary" data-a="bf" data-v="all">${copy('Show all','Zobrazit vše')}</button>`:''}`)}</div>`;
+}
+function drawAdd(){
+ const note=A.mode==='note',media=A.mode==='moment',item=A.mode==='item';
+ const W=[...(A.card?[['none',copy('Unscheduled','Bez termínu')]]:[]),['today',copy('Today','Dnes')],['tom',copy('Tomorrow','Zítra')],['day',copy('Choose day','Vybrat den')],['rep',copy('Repeat','Opakovat')]];
+ $('#sheet').innerHTML=`<span class="grab"></span><div class="rowh"><h2 class="sheet-title">${note?copy('New note','Nová poznámka'):media?copy('New moment','Nový moment'):copy('Add something','Přidat něco')}</h2><button class="ibtn" data-a="closeadd" aria-label="${copy('Close','Zavřít')}">${ic('close',18)}</button></div>
+ <div class="seg glass2 add-modes">${[['item',copy('Plan','Plán')],['note',copy('Note','Poznámka')],['moment',copy('Photo / video','Foto / video')]].map(x=>`<button class="${A.mode===x[0]?'on':''}" data-a="amode" data-v="${x[0]}">${x[1]}</button>`).join('')}</div>
+ ${media?`<label class="media-upload" for="add-file">${ic('photo',24)}<span>${A.src||A.video?copy('Change photo or video','Změnit fotku nebo video'):copy('Choose photo or video','Vybrat fotku nebo video')}</span>${A.src?`<img src="${A.src}" alt="">`:''}${A.video?`<video src="${A.video}" muted playsinline></video>`:''}</label><input id="add-file" type="file" accept="image/*,video/*" hidden>`:''}
+ <label class="field-label" for="add-t">${note?copy('Your note','Tvoje poznámka'):media?copy('Caption · optional','Popisek · volitelné'):copy('What is on your mind?','Co máš na mysli?')}</label>
+ ${item?`<input class="field" id="add-t" value="${esc(A.t)}" autocomplete="off" placeholder="${copy('A task, a plan, a little thing…','Úkol, plán, drobnost…')}">`:`<textarea class="field note-input" id="add-t" placeholder="${copy('Write something…','Napiš něco…')}">${esc(A.t)}</textarea>`}<span class="sub" id="parsed"></span>
+ ${S.cards.length?`<label class="field-label" for="add-card">${copy('Card · optional','Karta · volitelné')}</label><select class="field" id="add-card"><option value="">${copy('No card','Bez karty')}</option>${S.cards.map(c=>`<option value="${c.id}"${c.id===A.card?' selected':''}>${esc(c.name)}</option>`).join('')}</select>`:''}
+ ${item?`<div class="field-group"><span class="field-label">${copy('When?','Kdy?')}</span><div class="wrap">${W.map(w=>`<button class="pill${A.when===w[0]?' on':''}" data-a="awhen" data-v="${w[0]}">${w[1]}</button>`).join('')}</div>
+ ${A.when==='rep'?`<label class="field-label" for="add-repeat">${copy('Repeat','Opakování')}</label><select class="field" id="add-repeat"><option value="daily"${A.repeatRule!=='weekly'?' selected':''}>${copy('Every day','Každý den')}</option><option value="weekly"${A.repeatRule==='weekly'?' selected':''}>${copy('Every week','Každý týden')}</option></select>`:''}
+ ${['day','rep'].includes(A.when)?`<label class="field-label" for="add-date">${copy('Date','Datum')}</label><input class="field" id="add-date" type="date" value="${A.date}">`:''}
+ ${A.when!=='none'?`<label class="field-label" for="add-time">${copy('Time · optional','Čas · volitelné')}</label><input type="time" id="add-time" class="field" value="${A.time}">`:''}</div>`:''}
+ <button class="cta" data-a="asave">${item?(A.card&&A.when==='none'?copy('Save to card','Uložit do karty'):copy('Save to Plan','Uložit do Planu')):copy('Save to Board','Uložit na Board')}</button>`;
+}
+let itemDraft=null;
+function editItem(id){
+ const it=S.items.find(i=>i.id===id);if(!it)return;
+ itemDraft={...it};A=null;WN=null;V.edit=null;
+ $('#sheet').innerHTML=`<span class="grab"></span><div class="rowh"><h2 class="sheet-title">${copy('Edit item','Upravit položku')}</h2><button class="ibtn" data-a="closeadd" aria-label="${copy('Close','Zavřít')}">${ic('close',18)}</button></div>
+ <label class="field-label" for="item-name">${copy('Name','Název')}</label><input id="item-name" class="field" value="${esc(it.t)}" required>
+ <label class="field-label" for="item-card">${copy('Card · optional','Karta · volitelné')}</label><select class="field" id="item-card"><option value="">${copy('No card','Bez karty')}</option>${S.cards.map(c=>`<option value="${c.id}"${it.card===c.id?' selected':''}>${esc(c.name)}</option>`).join('')}</select>
+ <label class="field-label" for="item-repeat">${copy('Schedule','Plánování')}</label><select class="field" id="item-repeat"><option value="once"${!it.repeat?' selected':''}>${copy('One-time','Jednorázově')}</option><option value="daily"${it.repeat&&it.repeatRule!=='weekly'?' selected':''}>${copy('Every day','Každý den')}</option><option value="weekly"${it.repeatRule==='weekly'?' selected':''}>${copy('Every week','Každý týden')}</option></select>
+ <div class="edit-time-grid"><label class="field-label">${copy('Date / starts','Datum / začíná')}<input id="item-date" class="field" type="date" value="${it.repeat?it.from||T():it.date||''}"></label><label class="field-label">${copy('Time','Čas')}<input id="item-time" class="field" type="time" value="${it.time||''}"></label></div>
+ <span class="sub">${copy('Leave the date empty to keep a one-time item in its card.','Jednorázová položka bez data zůstane ve své kartě.')}</span>
+ <button class="cta" data-a="item-save">${copy('Save changes','Uložit změny')}</button>`;
+ $('#scrim').hidden=false;$('#sheet').hidden=false;requestAnimationFrame(()=>{$('#scrim').classList.add('show');$('#sheet').classList.add('show');});
+}
+function saveItem(){
+ if(!itemDraft)return;const it=S.items.find(i=>i.id===itemDraft.id);if(!it)return;
+ const name=$('#item-name').value.trim(),link=$('#item-card').value||null,date=$('#item-date').value,repeat=$('#item-repeat').value,time=$('#item-time').value;
+ if(!name){$('#item-name').focus();toast(copy('Give it a name.','Doplň název.'));return;}
+ if(!date&&(repeat!=='once'||!link)){toast(copy('Choose a date for Plan.','Vyber datum pro Plan.'));$('#item-date').focus();return;}
+ it.t=name;it.card=link;
+ if(repeat!=='once'){it.repeat=true;it.repeatRule=repeat;it.from=date;it.repeatDay=dOf(date).getDay();it.doneDates=it.doneDates||[];delete it.date;}
+ else{if(it.repeat){it.done=!!it.doneDates?.includes(date||T());}delete it.repeat;delete it.repeatRule;delete it.repeatDay;delete it.from;if(date)it.date=date;else delete it.date;}
+ if(time)it.time=time;else delete it.time;
+ save();closeAdd();itemDraft=null;render();toast(copy('Changes saved','Změny uloženy'));
+}
+// Capture only the new actions; the existing navigation and saving stay in place.
+document.addEventListener('click',e=>{
+ if(Date.now()<holdClickUntil){e.preventDefault();e.stopImmediatePropagation();return;}
+ const el=e.target.closest('[data-a]');if(!el)return;
+ const action=el.dataset.a;
+ if(!['edititem','item-save','boardnote','boardmedia'].includes(action))return;
+ e.preventDefault();e.stopImmediatePropagation();
+ if(action==='edititem')editItem(el.dataset.id);
+ if(action==='item-save')saveItem();
+ if(action==='boardnote'||action==='boardmedia'){openAdd();A.mode=action==='boardnote'?'note':'moment';drawAdd();}
+},true);
+document.addEventListener('change',e=>{
+ if(!A)return;
+ if(e.target.id==='add-card'){A.card=e.target.value||null;if(!A.card&&A.when==='none')A.when='today';drawAdd();}
+ if(e.target.id==='add-repeat')A.repeatRule=e.target.value;
+});
+// Long press is an extra shortcut; all edits are also visible tap/keyboard actions.
+let hold=null,holdClickUntil=0;
+document.addEventListener('pointerdown',e=>{const el=e.target.closest('.item[data-id],.citem[data-id],.dchip[data-id],.next[data-id],.slide [data-a="tog"]');if(!el||e.target.closest('.check-hit'))return;const x=e.clientX,y=e.clientY;hold={el,x,y,id:el.dataset.id,timer:setTimeout(()=>{if(!hold)return;const id=hold.id;hold=null;holdClickUntil=Date.now()+900;editItem(id);},550)};});
+document.addEventListener('pointermove',e=>{if(hold&&Math.hypot(e.clientX-hold.x,e.clientY-hold.y)>8){clearTimeout(hold.timer);hold=null;}},{passive:true});
+for(const type of ['pointerup','pointercancel'])document.addEventListener(type,()=>{if(hold){clearTimeout(hold.timer);hold=null;}});
 
 (async () => {
   if (!TEST) { try { const saved = await DB.get('kv', 'state'); if (saved && saved.v === SCHEMA) S = saved; } catch(e) {} }

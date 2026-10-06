@@ -389,39 +389,36 @@ textarea.field{height:96px;padding:12px 16px;font:400 13px/1.4 ui-monospace,Menl
 .glassy .cloud-dialog{background:var(--sheet);backdrop-filter:blur(26px);-webkit-backdrop-filter:blur(26px)}
 [hidden]{display:none!important}
 </style>
-<link rel="stylesheet" href="blue-preview.css"><link rel="stylesheet" href="landing-preview.css"><link rel="stylesheet" href="integrated-flow.css?v=ios-keyboard5"><script>// iOS moves (not only resizes) the visual viewport when focusing an input.
-// Anchor the interactive layer to that viewport; never translate the background.
-(()=>{const viewport=window.visualViewport,root=document.documentElement;let frame,fullHeight=innerHeight,lastWidth=innerWidth,frameInput=false;
- const editing=()=>frameInput||!!document.activeElement?.matches('input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]),textarea,[contenteditable="true"]');
- const fit=()=>{cancelAnimationFrame(frame);frame=requestAnimationFrame(()=>{
-  if(Math.abs(innerWidth-lastWidth)>80){fullHeight=innerHeight;lastWidth=innerWidth;}
-  fullHeight=Math.max(fullHeight,innerHeight);
-  const h=viewport&&viewport.scale===1?viewport.height:innerHeight;
-  const keyboard=editing()&&fullHeight-h>100;
-  const top=keyboard?Math.max(0,viewport?.offsetTop||0):0;
-  root.style.setProperty('--app-height',Math.round(h)+'px');
-  root.style.setProperty('--app-top',Math.round(top)+'px');
-  root.toggleAttribute('data-keyboard',keyboard);
-  if(editing()&&(scrollX||scrollY))window.scrollTo({left:0,top:0,behavior:'instant'});
-  if(keyboard){
+<link rel="stylesheet" href="blue-preview.css"><link rel="stylesheet" href="landing-preview.css"><link rel="stylesheet" href="integrated-flow.css?v=20261006-1"><script>// Keep one UI stage inside the iOS visual viewport. Wallpaper stays full-size.
+(()=>{
+ const root=document.documentElement,vv=window.visualViewport;let raf=0,baseline=innerHeight,width=innerWidth,frameFocus=false,keyboard=false;
+ const isInput=e=>!!e?.matches('input:not([type=range]):not([type=checkbox]):not([type=radio]):not([type=file]),textarea,[contenteditable="true"]');
+ function fit(){cancelAnimationFrame(raf);raf=requestAnimationFrame(()=>{
+  if(Math.abs(innerWidth-width)>80){baseline=innerHeight;width=innerWidth;}
+  baseline=Math.max(baseline,innerHeight);const h=vv&&vv.scale===1?vv.height:innerHeight;
+  const focused=isInput(document.activeElement)||(frameFocus&&!!document.querySelector('.onboarding-screen iframe'));
+  keyboard=baseline-h>120&&(focused||keyboard);
+  const y=keyboard?Math.max(0,vv?.offsetTop||0):0;
+  root.style.setProperty('--app-height',Math.round(h)+'px');root.style.setProperty('--app-top',Math.round(y)+'px');root.toggleAttribute('data-keyboard',keyboard);
+  if(keyboard&&isInput(document.activeElement)){
    const input=document.activeElement;
-   if(input?.matches('input,textarea,[contenteditable="true"]')){
-    // Scroll only the containing form/list, never the page behind it.
-    for(let box=input.parentElement;box&&box!==document.body;box=box.parentElement){
-     if(!/(auto|scroll)/.test(getComputedStyle(box).overflowY)||box.scrollHeight<=box.clientHeight)continue;
-     const r=input.getBoundingClientRect(),b=box.getBoundingClientRect(),lo=Math.max(b.top,top)+12,hi=Math.min(b.bottom,top+h)-12;
-     if(r.bottom>hi)box.scrollTop+=r.bottom-hi;else if(r.top<lo)box.scrollTop-=lo-r.top;
-     break;
-    }
+   for(let box=input.parentElement;box&&box!==document.body;box=box.parentElement){
+    if(!/(auto|scroll)/.test(getComputedStyle(box).overflowY)||box.scrollHeight<=box.clientHeight+1)continue;
+    const r=input.getBoundingClientRect(),b=box.getBoundingClientRect(),top=Math.max(y,b.top)+12,bottom=Math.min(y+h,b.bottom)-12;
+    if(r.bottom>bottom)box.scrollTop+=r.bottom-bottom;else if(r.top<top)box.scrollTop-=top-r.top;
+    break;
    }
   }
- });};
- window.addEventListener('resize',fit);window.addEventListener('scroll',fit,{passive:true});
- viewport?.addEventListener('resize',fit);viewport?.addEventListener('scroll',fit);
+ });}
+ for(const e of ['resize','pageshow'])window.addEventListener(e,fit);
+ vv?.addEventListener('resize',fit);vv?.addEventListener('scroll',fit);
  document.addEventListener('focusin',fit);document.addEventListener('focusout',()=>setTimeout(fit,0));
- window.addEventListener('message',e=>{const f=document.querySelector('.onboarding-screen iframe');if(e.origin!==location.origin||e.source!==f?.contentWindow||e.data?.type!=='aurora:input-focus')return;frameInput=e.data.focused===true;fit();});
- window.addEventListener('pageshow',fit);fit();
+ window.addEventListener('message',e=>{const f=document.querySelector('.onboarding-screen iframe');if(e.origin===location.origin&&e.source===f?.contentWindow&&e.data?.type==='aurora:input-focus'){frameFocus=e.data.focused===true;fit();}});
+ // Correct a real document scroll without repeatedly fighting visual viewport panning.
+ window.addEventListener('scroll',()=>{if(scrollY||scrollX)window.scrollTo(0,0);fit();},{passive:true});
+ fit();
 })();
+
 document.addEventListener('DOMContentLoaded',()=>{
  const phoneLandscape=matchMedia('(pointer:coarse) and (orientation:landscape) and (max-height:600px) and (max-width:1100px)');
  const guard=document.createElement('div');guard.className='portrait-guard';guard.hidden=true;guard.tabIndex=-1;guard.setAttribute('role','dialog');guard.setAttribute('aria-modal','true');
@@ -436,11 +433,12 @@ document.addEventListener('DOMContentLoaded',()=>{
  }
  phoneLandscape.addEventListener('change',orient);window.addEventListener('resize',orient);orient();
 });
-</script></head>
+</script><link rel="stylesheet" href="spectrum-refinements.css?v=20261006-1"></head>
 <body>
 <div class="app" id="app">
   <div class="bg"></div>
   
+  <div class="app-ui">
   <div class="col">
     <div id="screen"></div>
     <nav class="nav" id="nav" aria-label="Main navigation"></nav>
@@ -450,6 +448,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   <div id="over"></div>
   <div class="toast" id="toast" role="status"></div>
   <div class="splash" id="splash" aria-label="AURORA"></div>
+</div>
 </div>
 <script data-source="cloud-config.js">
 // Public browser configuration. Never put a secret/service_role key here.
@@ -546,7 +545,7 @@ window.AuroraMediaTransfer=(()=>{
 
 </script>
 <script>
-(function(){var lang='en';try{lang=localStorage.getItem('aurora-language')==='cs'?'cs':'en'}catch(e){}window.AURORA_LANGUAGE=lang;document.documentElement.lang=lang;var s=document.createElement('script');s.src='app-'+lang+'.js?v=20261005-ios5';document.body.appendChild(s)})();
+(function(){var lang='en';try{lang=localStorage.getItem('aurora-language')==='cs'?'cs':'en'}catch(e){}window.AURORA_LANGUAGE=lang;document.documentElement.lang=lang;var s=document.createElement('script');s.src='app-'+lang+'.js?v=20261006-1';document.body.appendChild(s)})();
 </script>
 
 </body>
