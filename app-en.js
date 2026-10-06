@@ -432,7 +432,7 @@ function settings(){
     <section class="panel glass" style="padding:4px 18px">
       ${segRow('Theme','theme',[['dark','Dark'],['light','Light'],['auto','Auto']])}
       <div class="set" style="flex-direction:column;align-items:stretch;gap:10px;padding:12px 0 14px"><span class="rowh"><span class="it">Panels and buttons</span><span class="sub">${S.surface === 'glass' ? 'frosted glass' : 'solid'}</span></span>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">${[['solid','Solid','background:rgba(20,15,13,.75)','background:#f6ecdc;color:#1c1513'],['glass','Frosted glass','background:rgba(255,255,255,.14);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:inset 0 1px 0 rgba(255,255,255,.35)','background:rgba(255,255,255,.28);color:#fff;box-shadow:inset 0 0 0 1px rgba(255,255,255,.35)']].map(x => `<button data-a="setv" data-k="surface" data-v="${x[0]}" aria-pressed="${(S.surface || 'solid') === x[0]}" style="height:96px;border-radius:18px;position:relative;overflow:hidden;background:url(${WALL}) center/cover;box-shadow:${(S.surface || 'solid') === x[0] ? '0 0 0 2px var(--ink)' : 'none'}"><span style="position:absolute;left:10px;right:10px;top:10px;height:34px;border-radius:12px;border:1px solid rgba(255,255,255,.18);${x[2]}"></span><span style="position:absolute;left:10px;bottom:10px;height:28px;padding:0 12px;border-radius:999px;display:flex;align-items:center;font-size:13px;font-weight:600;${x[3]}">${x[1]}</span></button>`).join('')}</div></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">${[['solid','Solid','background:var(--solid-panel)','background:#f6ecdc;color:#1c1513'],['glass','Frosted glass','background:rgba(255,255,255,.14);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:inset 0 1px 0 rgba(255,255,255,.35)','background:rgba(255,255,255,.28);color:#fff;box-shadow:inset 0 0 0 1px rgba(255,255,255,.35)']].map(x => `<button data-a="setv" data-k="surface" data-v="${x[0]}" aria-pressed="${(S.surface || 'solid') === x[0]}" style="height:96px;border-radius:18px;position:relative;overflow:hidden;background:var(--surface-wallpaper) center/cover;box-shadow:${(S.surface || 'solid') === x[0] ? '0 0 0 2px var(--ink)' : 'none'}"><span style="position:absolute;left:10px;right:10px;top:10px;height:34px;border-radius:12px;border:1px solid rgba(255,255,255,.18);${x[2]}"></span><span style="position:absolute;left:10px;bottom:10px;height:28px;padding:0 12px;border-radius:999px;display:flex;align-items:center;font-size:13px;font-weight:600;${x[3]}">${x[1]}</span></button>`).join('')}</div></div>
       <div class="set" style="flex-direction:column;align-items:stretch;gap:10px;padding:12px 0 14px"><span class="it">Background</span>
         <div class="thumbs">${WT.map(w => `<button class="${S.wall === w[0] ? 'on' : ''}" style="background-image:${w[1]}" data-a="setv" data-k="wall" data-v="${w[0]}" aria-label="Background ${w[0]}" aria-pressed="${S.wall === w[0]}"></button>`).join('')}<label for="wallfile" class="${S.wall === 'custom' ? 'on' : ''}" style="height:64px;border-radius:16px;display:grid;place-items:center;cursor:pointer;font-size:13px;font-weight:600;text-align:center;line-height:1.2;${S.customWall ? `background:url(${S.customWall}) center/cover;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.6)` : 'border:1.5px dashed var(--faint);color:var(--mute)'};${S.wall === 'custom' ? 'box-shadow:0 0 0 2px var(--ink)' : ''}">${S.customWall ? 'Custom<br>change' : '+ Custom<br>photo'}</label><input type="file" id="wallfile" accept="image/*" hidden></div></div>
       <label class="set" style="flex-direction:column;align-items:stretch;gap:8px;padding:12px 0 14px" for="blurr"><span class="rowh"><span class="it">Background blur</span><span class="sub" id="blurv">${S.blur || 0} px</span></span><input class="range" type="range" id="blurr" min="0" max="40" value="${S.blur || 0}"></label>
@@ -470,7 +470,7 @@ function settings(){
   return `<div class="scr"><div class="top"><button class="ibtn" data-a="back" aria-label="Back">${ic('back')}</button><span class="brand"><b class="aurora-wordmark" role="img" aria-label="Aurora"></b></span></div>
     <h1 class="h1">Settings</h1><span class="sub" style="margin-top:-8px;padding-left:4px">Make it yours.</span>
     <div class="bigseg glass" role="tablist">${['Appearance','Account & data'].map((l, k) => `<button role="tab" class="${tab === k ? 'on' : ''}" aria-selected="${tab === k}" data-a="settab" data-v="${k}">${l}</button>`).join('')}</div><!--BD-->
-    ${languageSettings()}${body}
+    ${languageSettings()}${body}${guideSettings()}
     <span class="sub" style="text-align:center;padding-top:8px">Aurora v13</span></div>`;
 }
 
@@ -503,16 +503,25 @@ function splashBg(k){
 }
 // Entry flow. Data stays local until setup completes; then the existing cloud client starts.
 let launchStage='tutorial', cloudStarted=false;
-function hasSetup(){return !!S.settings?.onboardingComplete || S.cards.length>0 || S.items.length>0 || S.moments.length>0;}
+function hasSetup(){return TEST || !!S.settings?.onboardingComplete;}
 function startCloudOnce(){if(!TEST&&!cloudStarted){cloudStarted=true;AuroraCloud.start();}}
-function splash(){
+function splash({replay=false}={}){
  const s=document.getElementById('splash');s.hidden=false;s.className='splash aurora-landing';s.setAttribute('role','dialog');s.setAttribute('aria-modal','true');s.setAttribute('aria-label','Welcome to Aurora');
  s.innerHTML='<div class="landing-field" aria-hidden="true"></div><div class="landing-noise" aria-hidden="true"></div><button class="landing-enter" aria-label="Enter Aurora"><span class="landing-brand" aria-hidden="true"><span class="landing-word"></span><span class="landing-glint"></span></span><span class="landing-hint">TAP TO ENTER</span></button>';
  const siblings=[...s.parentElement.children].filter(el=>el!==s&&!['SCRIPT','STYLE'].includes(el.tagName));const previous=siblings.map(el=>el.inert);siblings.forEach(el=>el.inert=true);
- const showApp=()=>{s.onkeydown=null;s.hidden=true;s.innerHTML='';s.className='splash';siblings.forEach((el,i)=>el.inert=previous[i]);render();document.querySelector('#nav .tab.on')?.focus({preventScroll:true});startCloudOnce();};
+ const showApp=()=>{s.onkeydown=null;s.hidden=true;s.innerHTML='';s.className='splash';siblings.forEach((el,i)=>el.inert=previous[i]);if(replay){V.stack=[];V.tab='home';}render();document.querySelector('#nav .tab.on')?.focus({preventScroll:true});startCloudOnce();};
  let entered=false;
- const enter=()=>{if(entered)return;entered=true;s.onkeydown=null;if(hasSetup()||window.AURORA_AUTH_RETURN){s.classList.add('leaving');setTimeout(showApp,matchMedia('(prefers-reduced-motion:reduce)').matches?0:650)}else if(launchStage==='onboarding')showOnboarding();else showTutorial();};
- s.querySelector('button').onclick=enter;s.tabIndex=-1;s.focus({preventScroll:true});s.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();enter()}};
+ const enter=()=>{if(entered)return;entered=true;s.onkeydown=null;if(!replay&&TEST){showApp();return;}if(!replay&&hasSetup()&&S.settings.guideVersion===1){s.classList.add('leaving');setTimeout(showApp,matchMedia('(prefers-reduced-motion:reduce)').matches?0:650);}else if(!replay&&!hasSetup()&&launchStage==='onboarding'){showOnboarding();}else showWelcome();};
+ s.querySelector('button').onclick=enter;s.tabIndex=-1;s.focus({preventScroll:true});s.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();enter()}};if(replay)enter();
+ function showWelcome(){
+  const returning=!!S.settings.onboardingComplete&&!replay;
+  s.className='splash guide-screen';s.setAttribute('aria-label',copy('Welcome to your space','Vítej ve svém prostoru'));
+  const sections=[['home','Home',copy('Your day at a glance. See what is next and what is already done.','Přehled dne. Co tě čeká a co už máš hotové.')],['spaces','Spaces',copy('Your projects and habits. Keep their tasks, notes and progress together.','Tvoje projekty a návyky. Úkoly, poznámky a pokrok na jednom místě.')],['board','Board',copy('Save notes, photos and ideas. Link a card if you want.','Ukládej poznámky, fotky a nápady. S kartou je propojíš, když chceš.')],['plan','Plan',copy('Schedule a habit or a one-time task. A card is optional.','Naplánuj návyk nebo jednorázový úkol. Karta není nutná.')]];
+  s.innerHTML=`<div class="guide-content"><span class="aurora-wordmark" role="img" aria-label="Aurora"></span><header><span class="cap">${copy('A LITTLE GUIDE','MALÝ PRŮVODCE')}</span><h1>${copy('Your space.<br>Your own pace.','Tvoje místo.<br>Tvoje tempo.')}</h1><p>${copy('Four simple places, all connected.','Čtyři jednoduchá místa, která spolu souvisí.')}</p></header><div class="guide-places">${sections.map(([icon,name,desc])=>`<section><span class="guide-icon" aria-hidden="true">${ic(icon,22)}</span><div><h2>${name}</h2><p>${desc}</p></div></section>`).join('')}</div><footer><button class="cta guide-continue">${returning?copy('Open my space','Otevřít můj prostor'):copy('Show me how','Ukázat jak')} ↗</button>${returning?'':`<button class="guide-skip">${copy('Skip video · start setting up','Přeskočit video · začít s nastavením')}</button>`}<p class="guide-status" role="status"></p></footer></div>`;
+  const proceed=async(skip=false)=>{const button=s.querySelector('.guide-continue');button.disabled=true;try{S.settings={...S.settings,guideVersion:1};if(!TEST)await DB.set('kv','state',S);if(returning)showApp();else if(skip){launchStage='onboarding';if(!TEST)await DB.set('kv','launch-flow','onboarding');showOnboarding();}else showTutorial();}catch{button.disabled=false;s.querySelector('.guide-status').textContent=copy('Could not save progress. Try again.','Průběh se nepodařilo uložit. Zkus to znovu.');}};
+  s.querySelector('.guide-continue').onclick=()=>proceed();s.querySelector('.guide-skip')?.addEventListener('click',()=>proceed(true));s.querySelector('.guide-continue').focus({preventScroll:true});
+ }
+
  function showTutorial(){
   s.className='splash tutorial-screen';s.setAttribute('aria-label','Aurora tutorial');
   const format=innerHeight>innerWidth?'mobile':'desktop';
@@ -535,25 +544,25 @@ function splash(){
   s.className='splash onboarding-screen';s.setAttribute('aria-label','Make Aurora yours');s.innerHTML='<iframe title="Set up Aurora" src="onboarding.html" allow="autoplay; fullscreen"></iframe>';
   const frame=s.querySelector('iframe');let saving=false;
   const receive=async e=>{if(e.origin!==location.origin||e.source!==frame.contentWindow||e.data?.type!=='aurora:finish-setup')return;if(saving)return;saving=true;
-   try{await commitOnboarding(e.data.state,e.data.photo);try{localStorage.removeItem('aurora-onboarding-live-v1')}catch{}e.source.postMessage({type:'aurora:setup-saved'},location.origin);window.removeEventListener('message',receive);setTimeout(showApp,100)}
+   try{await commitOnboarding(e.data.state,e.data.photo,replay);try{localStorage.removeItem('aurora-onboarding-live-v1')}catch{}e.source.postMessage({type:'aurora:setup-saved'},location.origin);window.removeEventListener('message',receive);setTimeout(showApp,100)}
    catch(error){saving=false;e.source.postMessage({type:'aurora:setup-error',message:'Your setup could not be saved. Please try again.'},location.origin);}
   };window.addEventListener('message',receive);frame.onload=()=>frame.contentWindow.focus();
  }
 }
-async function commitOnboarding(d,photo){
- if(S.settings?.onboardingComplete)return;
+async function commitOnboarding(d,photo,replay=false){
+ if(S.settings?.onboardingComplete&&!replay)return;
  if(!d||typeof d!=='object')throw Error('Missing setup');
  const text=(x,max)=>typeof x==='string'?x.trim().slice(0,max):'';
  const name=text(d.name,45),itemText=text(d.source==='card'?d.cardItem:d.newItem,120),note=text(d.note,600);
  const date=/^\d{4}-\d{2}-\d{2}$/.test(d.date||'')&&!Number.isNaN(new Date(d.date+'T12:00:00').getTime())?d.date:T();
- const next=structuredClone(S);next.settings={...next.settings,onboardingComplete:new Date().toISOString(),onboardingVersion:1};
+ const next=structuredClone(S);next.settings={...next.settings,onboardingComplete:new Date().toISOString(),onboardingVersion:1,guideVersion:1};
  const setupKey=crypto.randomUUID();
  const cardId='setup-card-'+setupKey,itemId='setup-item-'+setupKey,momentId='setup-moment-'+setupKey,photoId='setup-photo-'+setupKey;
  const cid=d.cardCreated&&name?cardId:null;
  if(cid&&!next.cards.some(c=>c.id===cid))next.cards.push({id:cid,name,type:d.type==='habit'?'habit':'project',color:d.type==='habit'?'#3fbf7f':'#6f8cff',notes:[],desc:''});
  if(d.planAdded&&itemText&&!next.items.some(i=>i.id===itemId)){
   const it={id:itemId,t:itemText,card:d.source==='card'?cid:null,done:false};
-  if(d.repeat==='daily'||d.repeat==='weekly'){it.repeat=true;it.doneDates=[];it.from=date;if(d.repeat==='weekly')it.repeatRule='weekly';}else it.date=date;
+  if(d.repeat==='daily'||d.repeat==='weekly'){it.repeat=true;it.doneDates=[];it.from=date;if(d.repeat==='weekly'){it.repeatRule='weekly';it.repeatDay=dOf(date).getDay();}}else it.date=date;
   next.items.push(it);
  }
  const validPhoto=d.boardType==='photo'&&photo instanceof Blob&&photo.type.startsWith('image/')&&photo.size>0&&photo.size<=20*1024*1024;
@@ -744,7 +753,7 @@ function applyBg(){
   const veil = isLight() ? `linear-gradient(rgba(246,238,228,${(.5 + dm*.4).toFixed(2)}),rgba(246,238,228,${(.66 + dm*.3).toFixed(2)}))` : `linear-gradient(rgba(14,10,8,${(.40 + dm*.50).toFixed(2)}),rgba(14,10,8,${(.34 + dm*.56).toFixed(2)}))`;
   const bg = $('.bg'); bg.style.background = veil + ',' + (W[S.wall] || W.ember) + ' center/cover';
   document.body.style.background = bg.style.background; document.body.style.backgroundAttachment = 'fixed';
-  const bl = +(S.blur || 0); bg.style.filter = bl ? `blur(${bl}px)` : ''; bg.style.transform = bl ? `scale(${1 + bl / 120})` : '';
+  updateSurfacePalette(); const bl = +(S.blur || 0); bg.style.filter = bl ? `blur(${bl}px)` : ''; bg.style.transform = bl ? `scale(${1 + bl / 120})` : '';
 }
 function render(){
   document.getElementById('app').classList.toggle('light', isLight());
@@ -1048,6 +1057,20 @@ const AuroraCloud=(()=>{
 
 // Shared refinements. Included inside the existing app closure in both languages.
 const copy = (en,cs) => window.AURORA_LANGUAGE === 'cs' ? cs : en;
+const surfaceColours=new Map(),pendingSurfaceColours=new Set();
+function updateSurfacePalette(){
+ const key=S.wall==='custom'?S.customWall:S.wall,app=document.getElementById('app');
+ app.style.setProperty('--surface-wallpaper',`url(${JSON.stringify(S.wall==='aurora-blue'?'landing-blue.svg':S.wall==='custom'?S.customWall:WALL)})`);
+ const rgb=surfaceColours.get(key)||(S.wall==='aurora-blue'?[53,92,124]:[110,80,72]);
+ const mix=(base,f)=>`rgb(${rgb.map((v,i)=>Math.round(v*f+base[i]*(1-f))).join(',')})`;
+ const light=isLight(),paper=[249,246,237],ink=[12,14,17];
+ const tokens=light?{panel:mix(paper,.10),secondary:mix(paper,.20),nav:mix(paper,.13),sheet:mix(paper,.07),next:mix(paper,.25),button:mix(ink,.29)}:{panel:mix(ink,.34),secondary:mix(ink,.46),nav:mix(ink,.28),sheet:mix(ink,.36),next:mix(ink,.55),button:'#eaece3'};
+ for(const [name,value] of Object.entries(tokens))app.style.setProperty('--solid-'+name,value);
+ if(surfaceColours.has(key)||pendingSurfaceColours.has(key)||S.wall==='aurora-blue')return;
+ const src=S.wall==='custom'?S.customWall:S.wall==='ember'?WALL:null;if(!src)return;
+ pendingSurfaceColours.add(key);const img=new Image();img.onload=()=>{try{const cv=document.createElement('canvas');cv.width=cv.height=32;const ctx=cv.getContext('2d',{willReadFrequently:true});ctx.drawImage(img,0,0,32,32);const data=ctx.getImageData(0,0,32,32).data;let total=0,sum=[0,0,0];for(let i=0;i<data.length;i+=4){const weight=data[i+3]/255;total+=weight;for(let k=0;k<3;k++)sum[k]+=data[i+k]*weight;}if(total)surfaceColours.set(key,sum.map(v=>Math.round(v/total)));if(key===(S.wall==='custom'?S.customWall:S.wall))updateSurfacePalette();}catch{}finally{pendingSurfaceColours.delete(key);}};img.onerror=()=>pendingSurfaceColours.delete(key);img.src=src;
+}
+function guideSettings(){return `<section class="panel glass"><button class="set" data-a="replayguide"><span class="ibody"><span class="it">${copy('Tutorial & setup','Průvodce a nastavení')}</span><span class="sub">${copy('See how Home, Spaces, Board and Plan work together. Your existing content stays saved.','Jak fungují Home, Spaces, Board a Plan. Tvůj dosavadní obsah zůstane uložený.')}</span></span><span aria-hidden="true">↗</span></button></section>`;}
 function fitHome(){
  const bd=document.querySelector('#screen .bd.static');if(!bd||DESK()||document.documentElement.hasAttribute('data-keyboard'))return;
  bd.classList.remove('home-compact');
@@ -1125,8 +1148,9 @@ document.addEventListener('click',e=>{
  if(Date.now()<holdClickUntil){e.preventDefault();e.stopImmediatePropagation();return;}
  const el=e.target.closest('[data-a]');if(!el)return;
  const action=el.dataset.a;
- if(!['edititem','item-save','boardnote','boardmedia'].includes(action))return;
+ if(!['edititem','item-save','boardnote','boardmedia','replayguide'].includes(action))return;
  e.preventDefault();e.stopImmediatePropagation();
+ if(action==='replayguide'){try{localStorage.removeItem('aurora-onboarding-live-v1')}catch{}splash({replay:true});return;}
  if(action==='edititem')editItem(el.dataset.id);
  if(action==='item-save')saveItem();
  if(action==='boardnote'||action==='boardmedia'){openAdd();A.mode=action==='boardnote'?'note':'moment';drawAdd();}
