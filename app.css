@@ -14,7 +14,7 @@
 :root{
   color-scheme:dark;
   --ink:#f3ead8;--ink2:rgba(243,234,216,.78);--ink3:rgba(243,234,216,.58);--ink4:rgba(243,234,216,.36);
-  --navy:#13233a;--cream:#ece9e1;--panel:rgba(20,31,44,.9);--bg:#171c15;
+  --navy:#13233a;--cream:#ece9e1;--panel:rgba(20,31,44,.9);--bg:#060b1c;
   --green:#3fbf7f;--orange:#f0a44b;--blue:#6f8cff;--late:#ff7a6b;
   --st:env(safe-area-inset-top,0px);--sb:env(safe-area-inset-bottom,0px);
   --spring:cubic-bezier(.3,1.35,.5,1);--out:cubic-bezier(.2,.8,.2,1);
@@ -32,7 +32,7 @@ b{font-weight:600}
 @media (display-mode: standalone){html{min-height:calc(100% + env(safe-area-inset-top,0px))}}
 
 /* BACKGROUND */
-#bg{position:absolute;inset:0;z-index:0;overflow:hidden;background:#171c15}
+#bg{position:absolute;inset:0;z-index:0;overflow:hidden;background:#060b1c}
 #bg .wall{position:absolute;inset:-4%;width:108%;height:108%;object-fit:cover;animation:wall 40s ease-in-out infinite alternate}
 #bg .wall.css{background:var(--wallcss)}
 @keyframes wall{to{transform:translate(-1%,-1%) scale(1.02)}}
