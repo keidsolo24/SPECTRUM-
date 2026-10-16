@@ -10,16 +10,19 @@ Celá Aurora v novém stylu (Liquid Glass + krémová, tmavomodré panely a Bric
 3. Aurora se otevírá přes celý displej jako appka.
 
 ## Co umí
-- **Home · Přístroj:** ciferník dne 06–24 z tvých položek, koule s odpočtem, Hotovo, Pak, dlaždice karet, týden.
+- **Home · Přístroj:** jen to podstatné. Ciferník dne 06–24, koule s odpočtem, Hotovo a krátký seznam Pak (max 3, zbytek v Plánu).
 - **Spaces:** karty jako balíček nebo seznam, filtr návyky/projekty, nová karta.
 - **Karta:** návyk (týden, série, měsíc, rytmus; klepnutím označíš den) nebo projekt (otevřené, deadline, další krok); úkoly, momenty, poznámka, úprava a smazání.
 - **Board:** fotky a videa z galerie nebo foťáku, poznámky, filtr podle karty, hledání. Prohlížeč vždy přes celý displej, **dvojklep = původní velikost**, klepnutí schová ovládání, swipe do stran další, dolů zavřít. Připnout, do karty, upravit, smazat.
-- **Plán:** den jako osa s „teď“, týden, měsíc, bez dne (přetažením na den).
+- **Plán:** den jako osa s „teď“, týden jako 7 sloupců na ose 06–24, měsíc, bez dne (přetažením na den).
 - **+:** plán / poznámka / foto. Rozumí „zítra v 10“, „v pátek“, „každý den“.
-- **Nastavení:** jméno, vzhled (tapeta, sklo/plné, záře, ztmavení), nápovědy, nedělní týden, jazyk CZ/EN, video manuál, přidat na plochu, import ze staré Aurory, záloha a obnova, ukázková data, smazání.
+- **Nastavení:** jméno, vzhled (tapeta, sklo/plné, ztmavení), nápovědy, nedělní týden, jazyk CZ/EN, video manuál, přidat na plochu, import ze staré Aurory, záloha a obnova, ukázková data, smazání.
+
+## Vzhled a chování
+Matné sklo bez lesku, bez barevné záře za obrazovkou (jen tapeta). Pevná hlavička nahoře, obsah projíždí pod ní, dole pevná lišta. Žádné zoomování ani posouvání celé stránky.
 
 ## Video manuál
-`tutorial.mp4` (72 s) se pustí z úvodní obrazovky nebo v Nastavení → Video manuál.
+`tutorial.mp4` (87 s) se pustí z úvodní obrazovky nebo v Nastavení → Video manuál.
 
 ## Nahrání na GitHub
 1. github.com/keidsolo24/SPECTRUM- → **Add file → Upload files**.

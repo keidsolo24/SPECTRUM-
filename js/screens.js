@@ -76,6 +76,16 @@ function nudgeHTML() {
   }
   return '';
 }
+function laterHTML(M, nx) {
+  const rest = M.list.filter(i => !isDone(i, M.d) && i !== nx);
+  const cs = lang() === 'cs';
+  if (!M.list.length) return '';
+  const rows = rest.slice(0, 3).map(i => trow(i, i.date && i.date < M.d && !i.repeat ? i.date : M.d, null)).join('');
+  const more = rest.length > 3 ? (cs ? 'a další ' + (rest.length - 3) + ' v Plánu' : '+' + (rest.length - 3) + ' more in Plan') : (cs ? 'Celý den v Plánu' : 'Whole day in Plan');
+  return '<section class="later frost solid"><div class="lh"><span class="cap">' + esc(t('then')) + '</span><span class="muted" style="font:400 12.5px/1 Inter">' + (rest.length ? esc(t('leftN', rest.length)) : '') + '</span></div>'
+    + (rows || '<div class="muted" style="font:400 14px/1.4 Inter;padding:10px 0 6px">' + esc(t('nothingElse')) + '</div>')
+    + '<button class="more press" data-a="orbTap">' + esc(more) + ico('chev', 14, 2.2) + '</button></section>';
+}
 function renderHome() {
   const M = homeModel(); const el = $('#s-home');
   const [n, s] = orbText(M);
@@ -94,11 +104,11 @@ function renderHome() {
   tl += weekTileHTML();
   const weekly = S.weekly && dow(M.d) === 6 ? '<button class="nudge frost press" data-a="weekReview" style="width:100%;text-align:left"><span class="ci">' + ico('sun', 17, 1.7) + '</span><span class="tx"><b>' + esc(t('weekReview')) + '</b><br>' + esc(t('weekReviewSub')) + '</span>' + ico('chev', 16, 2.2) + '</button>' : '';
   el.innerHTML = '<div class="hdr"><img class="logo" src="logo.svg" alt="aurora"><button class="cb frost press" data-a="openSettings" aria-label="' + esc(t('settings')) + '">' + ico('gear', 21, 1.8) + '</button></div>'
-    + '<div class="stack"><section class="inst frost"><div class="fh"><div><span class="t">' + esc(t('today')) + '</span><span class="s">' + esc(dayShort(M.d)) + ' · ' + (M.list.length ? t('ofDone', '<b>' + M.doneN + '</b>', M.list.length) : esc(t('nothingToday'))) + '</span></div><span class="fdots">' + dots + '</span></div>'
+    + '<div class="stack"><section class="inst big frost"><div class="fh"><div><span class="t">' + esc(t('today')) + '</span><span class="s">' + esc(dayShort(M.d)) + ' · ' + (M.list.length ? t('ofDone', '<b>' + M.doneN + '</b>', M.list.length) : esc(t('nothingToday'))) + '</span></div><span class="fdots">' + dots + '</span></div>'
     + '<div class="dialw" id="dialw">' + dialSVG(M.arcs, M.nm) + '<span class="flbl" style="left:106px;top:3px">06</span><span class="flbl" style="left:198px;top:159px">12</span><span class="flbl" style="left:14px;top:159px">18</span>'
     + '<button class="orb press" data-a="orbTap" aria-label="Plan"><span class="n" id="orbN">' + esc(n) + '</span><span class="s" id="orbS">' + esc(s) + '</span></button></div>'
     + '<div class="prow">' + pill + '</div></section>'
-    + then + weekly + '<div class="grid2">' + tl + '</div>' + nudgeHTML() + '</div>';
+    + laterHTML(M, nx) + '</div>';
   el._arcs = M.arcs;
   auraFromCards(nx && nx.card ? cardColor(nx.card) : null);
 }
@@ -321,12 +331,28 @@ function renderPlan() {
     body += '<section class="frost solid nodue" style="border-radius:30px;padding:16px 18px;margin-top:10px"><div style="display:flex;justify-content:space-between"><span class="cap">' + esc(t('noDayYet')) + ' · ' + nd.length + '</span><span class="muted" style="font:400 12px/1 Inter">' + esc(t('fromCards')) + '</span></div>'
       + (nd.length ? '<div class="chips wrap" style="margin-top:14px">' + nd.map(i => '<button class="chip in" data-a="when" data-drag="' + i.id + '" data-id="' + i.id + '"><span class="dot" style="--c:' + cardColor(i.card) + '"></span>' + esc(i.t) + '</button>').join('') + '</div><div class="muted" style="margin-top:14px;font:400 12.5px/1.35 Inter">' + esc(t('dragHint')) + '</div>' : '<div class="muted" style="margin-top:12px;font:400 13px/1.4 Inter">' + (lang() === 'cs' ? 'Všechno má svůj den.' : 'Everything has a day.') + '</div>') + '</section>';
   } else if (V.planMode === 'week') {
-    body = weekNav().replace('class="wnav"', 'class="wnav" style="margin:0 4px 12px"') + '<div class="wk7">' + [0, 1, 2, 3, 4, 5, 6].map(k => {
-      const d = addD(V.planWeek, k); const its = itemsOn(d); const dn = its.filter(i => isDone(i, d)).length;
-      return '<section class="wday frost solid' + (d === T() ? ' tdy' : '') + '"><button class="wh" data-a="openDay" data-d="' + d + '"><b>' + esc(WD[lang()][k] + ' ' + dOf(d).getDate() + '.') + (d === T() ? ' · ' + esc(t('today')) : '') + '</b><span class="muted" style="font:400 12.5px/1 Inter;display:flex;align-items:center;gap:6px">' + (its.length ? dn + '/' + its.length : '') + ico('chev', 14, 2.2) + '</span></button>'
-        + its.map(i => '<div class="mini' + (isDone(i, d) ? ' done' : '') + '" role="button" data-a="openItem" data-id="' + i.id + '"><span class="dot" style="--c:' + cardColor(i.card) + '"></span><span class="muted" style="width:40px;flex:none;font:400 12px/1 Inter">' + (i.time || '') + '</span><span class="tx">' + esc(i.t) + '</span>' + checkBtn(i, d) + '</div>').join('')
-        + '<button class="mini muted" data-a="add" data-date="' + d + '" style="font:500 13px/1 Inter">' + ico('plus', 14, 2.2) + ' ' + esc(t('addTo', WD[lang()][k])) + '</button></section>';
-    }).join('') + '</div>';
+    const H = 432, S0 = 360, SPAN = 1080; const cs = lang() === 'cs';
+    let head = '<span></span>', cols = '', tot = 0, dn = 0, best = [-1, 0];
+    for (let k = 0; k < 7; k++) {
+      const d = addD(V.planWeek, k); const its = itemsOn(d); const isT = d === T();
+      const doneN = its.filter(i => isDone(i, d)).length; tot += its.length; dn += doneN; if (doneN > best[1]) best = [k, doneN];
+      const un = its.filter(i => !i.time).slice(0, 3).map(i => '<i style="--c:' + cardColor(i.card) + ';' + (isDone(i, d) ? '' : 'opacity:.45') + '"></i>').join('');
+      head += '<button class="' + (isT ? 'tdy' : '') + '" data-a="openDay" data-d="' + d + '">' + esc(WD[lang()][k].slice(0, 2)) + '<b>' + dOf(d).getDate() + '</b><span class="dd">' + un + '</span></button>';
+      const nm = nowMin(); const nextT = isT ? its.find(i => i.time && !isDone(i, d) && tmin(i.time) + (i.dur || 45) > nm) : null;
+      let bl = '';
+      its.filter(i => i.time).forEach(i => {
+        const st = Math.max(0, tmin(i.time) - S0), du = i.dur || 45; const top = st / SPAN * H; const h = Math.max(18, du / SPAN * H);
+        bl += '<button class="wg-b' + (isDone(i, d) ? ' done' : '') + (nextT && nextT.id === i.id ? ' next' : '') + '" style="--c:' + cardColor(i.card) + ';top:' + top.toFixed(1) + 'px;height:' + h.toFixed(1) + 'px" data-a="openItem" data-id="' + i.id + '" aria-label="' + esc(i.time + ' ' + i.t) + '"></button>';
+      });
+      if (isT) { const y = Math.min(H, Math.max(0, (nm - S0) / SPAN * H)); bl += '<span class="wg-now" style="top:' + y.toFixed(1) + 'px"></span>'; }
+      cols += '<div class="wg-col' + (isT ? ' tdy' : '') + '" style="grid-column:' + (k + 2) + '" data-a="openDay" data-d="' + d + '">' + bl + '</div>';
+    }
+    let lines = ''; [0, 6, 12, 18].forEach(hh => { const y = hh / 18 * H; lines += '<span class="hl" style="top:' + y + 'px"></span><span class="hlab" style="top:' + y + 'px">' + pad(6 + hh) + '</span>'; });
+    const sum = tot ? (cs ? '<b>' + dn + '</b> z ' + tot + ' hotovo' + (best[0] >= 0 ? ' · nejvíc ' + WD.cs[best[0]] : '') : '<b>' + dn + '</b> of ' + tot + ' done' + (best[0] >= 0 ? ' · best ' + WD.en[best[0]] : '')) : (cs ? 'Prázdný týden' : 'Empty week');
+    body = weekNav().replace('class="wnav"', 'class="wnav" style="margin:0 4px 12px"')
+      + '<section class="wgrid frost solid"><div class="wg-sum">' + sum + '</div><div class="wg-head">' + head + '</div><div class="wg-body" style="height:' + H + 'px">' + lines + cols + '</div>'
+      + '<div class="wg-leg"><span><i class="o"></i>' + (cs ? 'naplánováno' : 'planned') + '</span><span><i></i>' + (cs ? 'hotovo' : 'done') + '</span><span><i class="nw"></i>' + (cs ? 'teď' : 'now') + '</span></div></section>'
+      + '<div class="muted" style="text-align:center;font:400 12.5px/1.4 Inter;margin-top:10px">' + (cs ? 'Klepni na den pro detail, na blok pro úpravu.' : 'Tap a day for details, a block to edit.') + '</div>';
   } else {
     const [y, m] = V.monCursor.split('-').map(Number); const first = y + '-' + pad(m) + '-01'; const nDays = new Date(y, m, 0).getDate(); const off = dow(first);
     let g = WD1[lang()].map(w => '<span class="wl">' + w + '</span>').join('');
@@ -399,7 +425,7 @@ const WALLS = {
 };
 function applyLook() {
   document.body.classList.toggle('solidui', S.surface === 'solid');
-  document.body.classList.toggle('noaura', !S.aura);
+  document.body.classList.add('noaura');
   const img = $('#wallImg'); const w = S.wall;
   if (w === 'photo' && S.wallKey && mediaNow(S.wallKey)) { img.style.display = ''; img.src = mediaNow(S.wallKey); $('#bg').style.background = '#2c4770'; }
   else if (w === 'aurora' || !WALLS[w]) { img.style.display = ''; if (!img.src.endsWith('wall.jpg')) img.src = 'wall.jpg'; $('#bg').style.background = '#2c4770'; }
@@ -416,7 +442,7 @@ function renderSettings() {
       + '<div class="sec" style="margin-top:0"><span class="cap">' + esc(t('wallpaper')) + '</span><div class="walls">' + wl.map(([k, l, st]) => '<button class="' + (S.wall === k ? 'on' : '') + '" style="' + st + '" data-a="setWall" data-k="' + k + '">' + (l && k === 'photo' ? esc(l) : '') + '</button>').join('') + '</div>'
       + '<div style="display:flex;justify-content:space-between;margin:10px 4px 0">' + wl.map(([k, l]) => '<span class="muted" style="flex:1;text-align:center;font:400 12px/1 Inter">' + esc(k === 'photo' ? t('photo') : l) + '</span>').join('') + '</div></div>'
       + '<div class="sec"><span class="cap">' + esc(t('surfaces')) + '</span><div class="seg frost" style="display:grid;grid-template-columns:1fr 1fr;height:46px"><button class="' + (S.surface !== 'solid' ? 'on' : '') + '" style="height:40px" data-a="setSurface" data-k="glass">' + esc(t('glass')) + '</button><button class="' + (S.surface === 'solid' ? 'on' : '') + '" style="height:40px" data-a="setSurface" data-k="solid">' + esc(t('solid')) + '</button></div></div>'
-      + '<div class="sec"><section class="grp frost solid"><button class="srow" data-a="toggleAura"><span class="tx">' + esc(t('aura')) + '<small>' + esc(t('auraSub')) + '</small></span><span class="tg' + (S.aura ? ' on' : '') + '" style="margin-left:auto"></span></button>'
+      + '<div class="sec"><section class="grp frost solid">'
       + '<div class="srow" style="flex-wrap:wrap"><span class="tx">' + esc(t('dim')) + '</span><span class="r" style="margin-left:auto">' + (S.dim ?? 22) + ' %</span><input type="range" min="0" max="60" step="2" value="' + (S.dim ?? 22) + '" id="dimR" style="width:100%;accent-color:#ece9e1;margin:6px 0 4px" aria-label="' + esc(t('dim')) + '"></div></section></div>';
     const r = $('#dimR'); r.addEventListener('input', () => { S.dim = +r.value; applyLook(); r.parentElement.querySelector('.r').textContent = S.dim + ' %'; }); r.addEventListener('change', save);
     return;

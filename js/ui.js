@@ -160,7 +160,8 @@ $('#scrim').addEventListener('click', () => closeSheet());
 (function vv() {
   const v = window.visualViewport; if (!v) return;
   const up = () => {
-    const kb = Math.max(0, window.innerHeight - v.height - v.offsetTop);
+    let kb = Math.max(0, window.innerHeight - v.height - v.offsetTop);
+    if (kb > 80) kb += Math.max(0, document.body.clientHeight - window.innerHeight);
     document.documentElement.style.setProperty('--kb', kb + 'px');
     document.documentElement.style.setProperty('--vvh', v.height + 'px');
   };
