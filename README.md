@@ -1,24 +1,34 @@
-# Aurora — test build, 6 October 2026
+# Aurora Glass · testovací verze
 
-Test app: https://keidsolo24.github.io/SPECTRUM-/
+Celá Aurora v novém stylu (Liquid Glass + krémová, tmavomodré panely a Bricolage 800 ze staré Aurory). Běží jako PWA, funguje offline a data zůstávají v telefonu.
 
-Phone and desktop: launch screen → tutorial → first-time setup → Home, Spaces, Board and Plan. Existing local setup goes straight to the app after tapping the logo.
+**Adresa:** https://keidsolo24.github.io/SPECTRUM-/glass/
 
-Open Settings → account/sync. Create an account and confirm the email once, or sign in to an existing account. Use the same account on both devices. Guest mode saves only on the current device.
+## Na iPhone
+1. Otevři adresu v Safari.
+2. Sdílet → **Přidat na plochu** → Přidat.
+3. Aurora se otevírá přes celý displej jako appka.
 
-This test uses `aurora_test_state_v13` and `aurora_test_commit_v13` with account-scoped row-level security. Older schema-6 cloud data remains in its original table; it is not automatically imported into this clean test. Media uses the existing private `aurora-media` bucket, with multipart transfer for large files. Do not put administrative keys in this static site.
+## Co umí
+- **Home · Přístroj:** ciferník dne 06–24 z tvých položek, koule s odpočtem, Hotovo, Pak, dlaždice karet, týden.
+- **Spaces:** karty jako balíček nebo seznam, filtr návyky/projekty, nová karta.
+- **Karta:** návyk (týden, série, měsíc, rytmus; klepnutím označíš den) nebo projekt (otevřené, deadline, další krok); úkoly, momenty, poznámka, úprava a smazání.
+- **Board:** fotky a videa z galerie nebo foťáku, poznámky, filtr podle karty, hledání. Prohlížeč vždy přes celý displej, **dvojklep = původní velikost**, klepnutí schová ovládání, swipe do stran další, dolů zavřít. Připnout, do karty, upravit, smazat.
+- **Plán:** den jako osa s „teď“, týden, měsíc, bez dne (přetažením na den).
+- **+:** plán / poznámka / foto. Rozumí „zítra v 10“, „v pátek“, „každý den“.
+- **Nastavení:** jméno, vzhled (tapeta, sklo/plné, záře, ztmavení), nápovědy, nedělní týden, jazyk CZ/EN, video manuál, přidat na plochu, import ze staré Aurory, záloha a obnova, ukázková data, smazání.
 
-The mobile and desktop tutorial soundtracks use the supplied K9 beat, mastered quietly. User-selected card colours remain available. The old purple and green background choices have been removed.
+## Video manuál
+`tutorial.mp4` (72 s) se pustí z úvodní obrazovky nebo v Nastavení → Video manuál.
 
-All files in this release folder belong in the repository root. Relative paths work under the GitHub Pages repository URL. `supabase-test-v13.sql` documents the additive backend setup already applied for this release. Build source is maintained in the local Aurora workspace.
+## Nahrání na GitHub
+1. github.com/keidsolo24/SPECTRUM- → **Add file → Upload files**.
+2. Přetáhni celou složku `glass` (z rozbaleného zipu) a dej **Commit changes**.
+3. Za 1–2 minuty běží na https://keidsolo24.github.io/SPECTRUM-/glass/
 
-English is the default interface language. Choose Czech in Settings → Language; the choice stays on this device. User-written card names, notes and other content are never translated. The tutorial video is in English.
+## Data
+Ukládá se do IndexedDB `aurora-glass` v telefonu. Stará Aurora (`aurora-v13`) zůstává nedotčená. Import z ní jen čte.
+Záloha: Nastavení → Exportovat zálohu (JSON s fotkami).
 
-Testing: automated first-run/resume/returning flows, responsive layouts, simulated two-device sync, offline recovery, media round-trip, large-media chunk verification. Physical iOS/Android and real email delivery still need user acceptance testing.
-
-
-October 6 refinements: bounded mobile content above navigation; responsive Home summaries; centered empty Home/Spaces/Board states; natural media aspect ratios; standalone Board notes; four-line text previews with full details on open; item editing by tap or long press; explicit daily/weekly scheduling; neutral frosted-glass surfaces. Habit card items no longer repeat automatically. Existing data and cloud schema are preserved.
-
-Validation for this update: five viewport sizes (320×568 through 1440×900), complete mobile/desktop first-run flow, English/Czech note and media actions, editing/completion/weekly schedule checks, and simulated keyboard viewport changes in onboarding, card fields, add forms, settings and login. Physical iPhone standalone keyboard behavior still needs device confirmation.
-
-October 6 update 2: Solid panels derive opaque colors from the active wallpaper, including uploaded images, in light and dark mode. The material preview uses the current wallpaper. A short English/Czech introduction explains Home, Spaces, Board and Plan before the tutorial and setup. Existing users see this introduction once; Tutorial & setup can be replayed from Settings without deleting content. Setup completion uses an explicit persisted flag, and weekly setup tasks retain their chosen weekday.
+## Soubory
+`index.html`, `app.css`, `js/` (core, ui, screens, sheets, app), `sw.js` (offline), `manifest.webmanifest`, `tutorial.mp4` (video manuál), `fonts/`, ikony, tapeta.

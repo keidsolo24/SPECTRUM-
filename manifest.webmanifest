@@ -1,21 +1,17 @@
 {
-  "name": "AURORA",
-  "short_name": "AURORA",
+  "name": "Aurora",
+  "short_name": "Aurora",
+  "description": "Your day, cards, board and plan.",
+  "id": "./",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#305d85",
-  "theme_color": "#305d85",
+  "orientation": "portrait",
+  "background_color": "#2c4770",
+  "theme_color": "#2c4770",
   "icons": [
-    {
-      "src": "icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png"
-    },
-    {
-      "src": "icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png"
-    }
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ]
 }
