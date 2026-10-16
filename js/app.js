@@ -87,12 +87,12 @@ function showWelcome() {
       + '<section class="ws"><img class="wlogo" src="logo.svg" alt="aurora"><h1>' + (cs ? 'Tvůj den.<br>Jeden kruh.' : 'Your day.<br>One circle.') + '</h1><p>' + esc(cs ? 'Karty, plán a momenty. Všechno zůstává v telefonu.' : 'Cards, plan and moments. Everything stays on your phone.') + '</p></section>'
       + '<section class="ws"><div class="dialw wdemo">' + dialSVG(arcs, nm) + '<span class="orb" style="pointer-events:none"><span class="n">0:40</span><span class="s">' + esc(cs ? 'do Lekce 4' : 'to Lesson 4') + '</span></span></div><h2>' + esc(cs ? 'Den 06–24 v jednom ciferníku' : 'Your day 06–24 on one dial') + '</h2><p>' + esc(cs ? 'Oblouky jsou tvoje věci v barvě karty. Svítí jen to, co je teď a co je další.' : 'Arcs are your things in their card colour. Only now and next glow.') + '</p></section>'
       + '<section class="ws"><h2>' + esc(cs ? 'Jak ti mám říkat?' : 'What should I call you?') + '</h2><div class="fld frost namef"><input id="wName" placeholder="' + esc(cs ? 'Tvoje jméno' : 'Your name') + '" autocomplete="given-name" value="' + esc(S.name || '') + '" enterkeyhint="done"></div>'
-      + '<div class="seg frost wmode"><button class="on" data-a="wMode" data-k="sample">' + esc(cs ? 'S ukázkou' : 'With example') + '</button><button data-a="wMode" data-k="empty">' + esc(cs ? 'Načisto' : 'Empty') + '</button>' + (old ? '<button data-a="wMode" data-k="import">' + esc(cs ? 'Moje data' : 'My data') + '</button>' : '') + '</div>'
-      + '<p class="wsub" id="wModeTx">' + esc(cs ? 'Pár karet a dní, ať vidíš, jak to žije. Smažeš jedním klepnutím.' : 'A few cards and days so you see it live. Remove with one tap.') + '</p></section>'
+      + '<p class="wsub">' + esc(cs ? 'Začneš první kartou: návyk nebo projekt. Zbytek přidáš přes +.' : 'You start with your first card: a habit or a project. Add the rest with +.') + '</p>'
+      + (old ? '<button class="chip frost press wold" data-a="wImport">' + ico('import', 15, 2) + esc(cs ? 'Načíst moje data ze staré Aurory' : 'Load my data from old Aurora') + '</button>' : '') + '</section>'
       + '</div><div class="wfoot"><div class="wdots" id="wdots"><i class="on"></i><i></i><i></i></div><button class="pbtn cr press" id="wNext" data-a="wNext">' + esc(cs ? 'Dál' : 'Next') + '</button></div>';
     const n = $('#wName'); n.addEventListener('input', () => { S.name = n.value; }); n.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); n.blur(); } });
     const sl = $('#wsl'); sl.addEventListener('scroll', () => { const k = Math.round(sl.scrollLeft / sl.clientWidth); if (k === w._k) return; w._k = k; $$('#wdots i').forEach((d, j) => d.classList.toggle('on', j === k)); $('#wNext').textContent = k === 2 ? (lang() === 'cs' ? 'Začít' : 'Start') : (lang() === 'cs' ? 'Dál' : 'Next'); }, { passive: true });
-    w._k = 0; w._mode = 'sample';
+    w._k = 0; w._mode = 'empty';
   };
   draw(); w.classList.add('on'); $('#nav').classList.add('away'); document.body.classList.add('navless');
   w._draw = draw;
@@ -101,7 +101,7 @@ ACT.wMode = el => { const w = $('#welcome'); w._mode = el.dataset.k; $$('.wmode 
   $('#wModeTx').textContent = el.dataset.k === 'sample' ? (cs ? 'Pár karet a dní, ať vidíš, jak to žije. Smažeš jedním klepnutím.' : 'A few cards and days so you see it live. Remove with one tap.') : el.dataset.k === 'empty' ? (cs ? 'Začneš první kartou. Zbytek přidáš přes +.' : 'You start with your first card. Add the rest with +.') : (cs ? 'Načte karty, plán a momenty ze staré Aurory. Stará zůstane, jak je.' : 'Loads cards, plan and moments from old Aurora. The old app stays as it is.'); };
 ACT.wNext = () => { const w = $('#welcome'), sl = $('#wsl'); const k = Math.round(sl.scrollLeft / sl.clientWidth);
   if (k < 2) { sl.scrollTo({ left: (k + 1) * sl.clientWidth, behavior: RM ? 'auto' : 'smooth' }); return; }
-  if (w._mode === 'import') ACT.wImport(); else if (w._mode === 'empty') ACT.wEmpty(); else ACT.wSample(); };
+  ACT.wEmpty(); };
 function hideWelcome() { const w = $('#welcome'); if (!w.classList.contains('on')) return; w.classList.remove('on'); w.innerHTML = ''; if (!V.card && !V.settingsOpen) { $('#nav').classList.remove('away'); document.body.classList.remove('navless'); } }
 ACT.wLang = el => { S.lang = el.dataset.k; applyLook(); buildNav(); $('#welcome')._draw(); };
 ACT.wSample = async () => { const keep = { name: (S.name || '').trim(), lang: S.lang }; S = await sampleState(keep); save(); hideWelcome(); go('home'); };
