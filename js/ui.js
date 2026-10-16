@@ -178,6 +178,21 @@ function playTutorial() {
 }
 ACT.closeVideo = () => { const L2 = $('#vlayer'); const v = $('video', L2); if (v) { v.pause(); v.removeAttribute('src'); v.load(); } L2.classList.remove('on'); L2.innerHTML = ''; };
 ACT.tutorial = () => playTutorial();
+function playIntro(onDone) {
+  const L2 = $('#vlayer'); const cs = lang() === 'cs';
+  L2.classList.add('on', 'intro'); L2.classList.remove('fade');
+  L2.innerHTML = '<video src="tutorial.mp4" poster="tutorial-poster.jpg" muted playsinline autoplay preload="auto"></video>'
+    + '<button class="chip frost press skip" data-a="skipIntro">' + esc(cs ? 'Přeskočit' : 'Skip') + '</button>'
+    + '<button class="cb frost press bigplay" data-a="introPlay" aria-label="Play" hidden>' + ico('play', 26, 2) + '</button>';
+  const v = $('video', L2); let done = false;
+  const finish = () => { if (done) return; done = true; L2.classList.add('fade'); const w = $('#welcome'); if (w) { w.classList.remove('reveal'); void w.offsetWidth; w.classList.add('reveal'); }
+    setTimeout(() => { v.pause(); L2.classList.remove('on', 'intro', 'fade'); L2.innerHTML = ''; onDone && onDone(); }, 750); };
+  L2._finish = finish;
+  v.onended = finish; v.onerror = finish;
+  const p = v.play && v.play(); if (p && p.catch) p.catch(() => { const b = $('.bigplay', L2); if (b) b.hidden = false; });
+}
+ACT.skipIntro = () => { const L2 = $('#vlayer'); L2._finish && L2._finish(); };
+ACT.introPlay = el => { const v = $('#vlayer video'); if (v) v.play().catch(() => ACT.skipIntro()); el.hidden = true; };
 
 /* ---------- number swap animation ---------- */
 function swapText(el, txt) { if (!el || el.textContent === txt) return; if (RM) { el.textContent = txt; return; } el.animate([{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translateY(-6px)' }], { duration: 140, fill: 'forwards' }).onfinish = () => { el.textContent = txt; el.animate([{ opacity: 0, transform: 'translateY(6px)' }, { opacity: 1, transform: 'none' }], { duration: 220, easing: 'cubic-bezier(.2,.8,.2,1)', fill: 'forwards' }); }; }

@@ -22,7 +22,7 @@ Celá Aurora v novém stylu (Liquid Glass + krémová, tmavomodré panely a Bric
 Matné sklo bez lesku, bez barevné záře za obrazovkou (jen tapeta). Pevná hlavička nahoře, obsah projíždí pod ní, dole pevná lišta. Žádné zoomování ani posouvání celé stránky.
 
 ## Video manuál
-`tutorial.mp4` (87 s) se pustí z úvodní obrazovky nebo v Nastavení → Video manuál.
+`tutorial.mp4` (20 s) se pustí z úvodní obrazovky nebo v Nastavení → Video manuál.
 
 ## Nahrání na GitHub
 1. github.com/keidsolo24/SPECTRUM- → **Add file → Upload files**.
