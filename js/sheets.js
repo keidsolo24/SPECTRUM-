@@ -92,7 +92,8 @@ function mountAdd() {
   }
   const f = $('#aFile'); if (f) f.addEventListener('change', async () => {
     const file = f.files && f.files[0]; if (!file) return;
-    if (file.type.startsWith('video/') && file.size > 60 * 1024 * 1024) { toast(esc(t('tooBig'))); return; }
+    if (file.type.startsWith('video/') && file.size > 500 * 1024 * 1024) { toast(esc(t('tooBig'))); return; }
+    if (file.type.startsWith('video/') && navigator.storage && navigator.storage.estimate) { try { const e = await navigator.storage.estimate(); if (e.quota && e.quota - (e.usage || 0) < file.size * 1.15) { toast(esc(t('noSpace'))); return; } } catch (er) {} }
     A.file = file; A.kind = file.type.startsWith('video/') ? 'video' : 'photo'; if (A.url) URL.revokeObjectURL(A.url); A.url = URL.createObjectURL(file); refreshAdd();
   });
   bindPickers();
@@ -129,12 +130,13 @@ async function saveAdd() {
     S.moments.push(m); save(); closeSheet(true); render();
     toast(esc(t('noteAdded')), { label: t('undo'), fn: () => { S.moments = S.moments.filter(x => x !== m); save(); render(); } });
   } else {
-    const sv = $('#sheetSave'); if (sv) sv.disabled = true;
+    const sv = $('#sheetSave'); if (sv) { sv.disabled = true; sv.textContent = t('saving'); }
     try {
       let blob = A.file, r = 1, dur = 0;
       if (A.kind === 'photo') { blob = await compressImage(A.file); r = await imgRatio(blob); } else { const vi = await vidInfo(blob); r = vi.r; dur = vi.dur; }
       const key = await putMedia(blob);
       const m = { id: uid(), kind: A.kind, card, note: A.text.trim(), d: T(), img: key, r, dur, ts: Date.now() };
+      if (A.kind === 'video') { try { const th = await videoThumb(blob); if (th) { m.thumb = await putMedia(th); await mediaURL(m.thumb); } } catch (e) {} }
       S.moments.push(m); save(); closeSheet(true); if (A.url) URL.revokeObjectURL(A.url);
       if (V.tab !== 'board' && !V.card) go('board'); else render();
       toast(esc(t('photoAdded')), { label: t('undo'), fn: () => { S.moments = S.moments.filter(x => x !== m); delMedia(key); save(); render(); } });
@@ -293,13 +295,14 @@ function openViewer(id) {
 function paintViewer(dir) {
   const v = $('#viewer'); const m = S.moments.find(x => x.id === VW.list[VW.idx]); if (!m) { closeViewer(); return; }
   const c = cardById(m.card); const u = mediaNow(m.img);
-  const med = m.kind === 'note' ? '<div class="vnote frost" style="--c:' + cardColor(m.card) + '">' + esc(m.note) + '</div>' : m.kind === 'video' ? '<video src="' + u + '" playsinline autoplay loop></video>' : '<img src="' + u + '" alt="' + esc(m.note || '') + '">';
+  const med = m.kind === 'note' ? '<div class="vnote frost" style="--c:' + cardColor(m.card) + '">' + esc(m.note) + '</div>' : m.kind === 'video' ? '<video src="' + u + '"' + (m.thumb ? ' poster="' + mediaNow(m.thumb) + '"' : '') + ' playsinline autoplay loop preload="auto"></video>' : '<img src="' + u + '" alt="' + esc(m.note || '') + '">';
   v.innerHTML = (m.kind !== 'note' && m.kind !== 'video' ? '<div class="vbg" style="background-image:url(' + u + ')"></div>' : m.kind === 'note' ? '<div class="vbg" style="background:' + cardColor(m.card) + ';opacity:.5"></div>' : '')
     + '<div class="vmed" id="vmed">' + med + '</div>'
     + '<div class="vtop"><span class="who frost">' + (c ? '<span class="led" style="--c:' + c.color + '"></span>' + esc(c.name) + ' · ' : '') + esc(dayName(m.d)) + '</span><span style="flex:1"></span>' + (m.kind === 'video' ? '<button class="cb frost press" id="vPlayBtn" data-a="vPlay" aria-label="Play">' + ico('pause', 20, 2) + '</button>' : '') + '<button class="cb frost press" data-a="closeViewer" aria-label="' + esc(t('close')) + '">' + ico('x', 20, 2.2) + '</button></div>'
     + (VW.list.length > 1 ? '<div class="vcount">' + (VW.idx + 1) + ' / ' + VW.list.length + '</div>' : '')
     + (m.note && m.kind !== 'note' ? '<div class="vcap">' + esc(m.note) + '</div>' : '')
     + '<div class="vact"><button class="frost press" data-a="vPin">' + ico('pin', 20, 1.9) + esc(m.pin ? t('unpin') : t('pin')) + '</button><button class="frost press" data-a="vCard">' + ico('card', 20, 1.9) + esc(t('toCard')) + '</button><button class="frost press" data-a="vEdit">' + ico('edit', 20, 1.9) + esc(t('edit')) + '</button><button class="frost press red" data-a="vDelete">' + ico('trash', 20, 1.9) + esc(t('del')) + '</button></div>';
+  const vv = $('#vmed video'); if (vv) { const pp = vv.play(); if (pp && pp.catch) pp.catch(() => { vv.muted = true; vv.play().catch(() => {}); const b = $('#vPlayBtn'); if (b) b.innerHTML = ico('play', 20, 2); }); }
   if (dir && !RM) $('#vmed').animate([{ transform: 'translateX(' + (dir * 60) + 'px)', opacity: 0 }, { transform: 'none', opacity: 1 }], { duration: 260, easing: 'cubic-bezier(.2,.8,.2,1)' });
 }
 function closeViewer() { const v = $('#viewer'); const vid = $('video', v); if (vid) vid.pause(); v.classList.remove('on'); v.innerHTML = ''; document.body.classList.remove('viewing'); render(); }
@@ -319,7 +322,7 @@ ACT.vEdit = () => {
 };
 ACT.vDelete = () => {
   confirmSheet(lang() === 'cs' ? 'Smazat tento moment?' : 'Delete this moment?', t('del'), () => {
-    const m = curM(); S.moments = S.moments.filter(x => x !== m); save(); delMedia(m.img);
+    const m = curM(); S.moments = S.moments.filter(x => x !== m); save(); delMedia(m.img); if (m.thumb) delMedia(m.thumb);
     VW.list.splice(VW.idx, 1); if (!VW.list.length) { closeViewer(); toast(esc(t('deleted'))); return; }
     VW.idx = Math.min(VW.idx, VW.list.length - 1); paintViewer(); toast(esc(t('deleted')));
   });

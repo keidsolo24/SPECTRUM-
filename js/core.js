@@ -93,7 +93,7 @@ const L = {
   imported: ['Imported {0} cards, {1} items, {2} moments', 'Importováno: {0} karet, {1} položek, {2} momentů'], nothingImport: ['Nothing to import found', 'Nic k importu'],
   restored: ['Backup restored', 'Záloha obnovena'], badFile: ['This file is not an Aurora backup', 'Tohle není záloha Aurory'],
   exported: ['Backup saved', 'Záloha uložena'], updateReady: ['New version ready', 'Nová verze připravena'], reload: ['Reload', 'Načíst'],
-  tooBig: ['Video is too big (max 60 MB)', 'Video je moc velké (max 60 MB)'],
+  tooBig: ['Video is too big (max 500 MB)', 'Video je moc velké (max 500 MB)'], noSpace: ['Not enough space on this phone for this video', 'V telefonu není dost místa na tohle video'], saving: ['Saving…', 'Ukládám…'],
   wkSummary: ['{0} things done this week', 'Tento týden hotovo: {0}'], planNext: ['Plan next week', 'Naplánovat další týden'],
   perCard: ['By card', 'Podle karet'], noneYet: ['Nothing checked off yet. This page fills up as you go.', 'Zatím nic odškrtnuto. Stránka se plní postupně.'],
   peekAt: ['{0} · {1}', '{0} · {1}'], ver: ['Aurora Glass {0} · test build', 'Aurora Glass {0} · testovací verze'],
@@ -170,7 +170,7 @@ async function mediaURL(k) {
   try { const b = await DB.get('media', k); if (!b) return ''; const u = URL.createObjectURL(b); MEDIA_URL.set(k, u); return u; } catch (e) { return ''; }
 }
 const mediaNow = k => MEDIA_URL.get(k) || '';
-async function warmMedia() { const ks = new Set(); S.moments.forEach(m => m.img && ks.add(m.img)); if (S.wallKey) ks.add(S.wallKey); await Promise.all([...ks].map(mediaURL)); }
+async function warmMedia() { const ks = new Set(); S.moments.forEach(m => { m.img && ks.add(m.img); m.thumb && ks.add(m.thumb); }); if (S.wallKey) ks.add(S.wallKey); await Promise.all([...ks].map(mediaURL)); }
 async function delMedia(k) { if (!k) return; try { await DB.del('media', k); } catch (e) {} const u = MEDIA_URL.get(k); if (u) URL.revokeObjectURL(u); MEDIA_URL.delete(k); }
 async function compressImage(file, max = 1800) {
   if (!file.type.startsWith('image/') || file.type === 'image/gif' || file.type === 'image/svg+xml') return file;
@@ -185,6 +185,27 @@ async function compressImage(file, max = 1800) {
 }
 function imgRatio(blob) { return new Promise(res => { const u = URL.createObjectURL(blob); const i = new Image(); i.onload = () => { res(i.naturalHeight / i.naturalWidth || 1); URL.revokeObjectURL(u); }; i.onerror = () => { res(1); URL.revokeObjectURL(u); }; i.src = u; }); }
 function vidInfo(blob) { return new Promise(res => { const u = URL.createObjectURL(blob); const v = document.createElement('video'); v.preload = 'metadata'; v.muted = true; v.onloadedmetadata = () => { res({ r: v.videoHeight && v.videoWidth ? v.videoHeight / v.videoWidth : 1.3, dur: v.duration || 0 }); URL.revokeObjectURL(u); }; v.onerror = () => { res({ r: 1.3, dur: 0 }); URL.revokeObjectURL(u); }; v.src = u; }); }
+
+function videoThumb(blob) {
+  return new Promise(res => {
+    const u = URL.createObjectURL(blob); const v = document.createElement('video');
+    v.muted = true; v.playsInline = true; v.setAttribute('playsinline', ''); v.setAttribute('muted', ''); v.preload = 'auto';
+    let done = false; const fin = b => { if (done) return; done = true; clearTimeout(to); try { v.pause(); } catch (e) {} URL.revokeObjectURL(u); v.removeAttribute('src'); try { v.load(); } catch (e) {} res(b || null); };
+    const to = setTimeout(() => fin(null), 9000);
+    v.onloadeddata = () => { try { v.currentTime = Math.min(0.6, (v.duration || 1) / 3); } catch (e) { fin(null); } };
+    v.onseeked = () => { try { const w = v.videoWidth, h = v.videoHeight; if (!w || !h) return fin(null); const k = Math.min(1, 900 / Math.max(w, h)); const c = document.createElement('canvas'); c.width = Math.round(w * k); c.height = Math.round(h * k); c.getContext('2d').drawImage(v, 0, 0, c.width, c.height); c.toBlob(b => fin(b), 'image/jpeg', .82); } catch (e) { fin(null); } };
+    v.onerror = () => fin(null);
+    v.src = u; const p = v.play && v.play(); if (p && p.then) p.then(() => v.pause()).catch(() => {});
+  });
+}
+async function ensureVideoThumbs() {
+  let changed = false;
+  for (const m of S.moments) {
+    if (m.kind !== 'video' || m.thumb || !m.img) continue;
+    try { const b = await DB.get('media', m.img); if (!b) continue; const th = await videoThumb(b); if (th) { m.thumb = await putMedia(th); await mediaURL(m.thumb); changed = true; } } catch (e) {}
+  }
+  if (changed) { save(); render(); }
+}
 
 /* ---------- model ---------- */
 const COLORS = ['#3fbf7f', '#f0a44b', '#6f8cff', '#ff5c9a', '#b08cff', '#4cc9d9', '#e8c547', '#9fb3c4'];
@@ -411,8 +432,10 @@ async function importOld() {
 /* ---------- backup ---------- */
 async function exportBackup() {
   const media = {};
-  const keys = new Set(S.moments.map(m => m.img).filter(Boolean)); if (S.wallKey) keys.add(S.wallKey);
-  for (const k of keys) { try { const b = await DB.get('media', k); if (b) media[k] = await new Promise(r => { const fr = new FileReader(); fr.onload = () => r(fr.result); fr.readAsDataURL(b); }); } catch (e) {} }
+  const keys = new Set(); S.moments.forEach(m => { m.img && keys.add(m.img); m.thumb && keys.add(m.thumb); }); if (S.wallKey) keys.add(S.wallKey);
+  let skipped = 0;
+  for (const k of keys) { try { const b = await DB.get('media', k); if (!b) continue; if (b.size > 80 * 1024 * 1024) { skipped++; continue; } media[k] = await new Promise(r => { const fr = new FileReader(); fr.onload = () => r(fr.result); fr.readAsDataURL(b); }); } catch (e) {} }
+  if (skipped) toast(esc(lang() === 'cs' ? 'Velká videa (nad 80 MB) nejsou v záloze, jen jejich náhled.' : 'Large videos (over 80 MB) are not in the backup, only their preview.'));
   const data = { app: 'aurora-glass', v: 1, exported: new Date().toISOString(), state: S, media };
   const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
   const name = 'aurora-backup-' + T() + '.json';

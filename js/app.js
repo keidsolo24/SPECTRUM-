@@ -82,7 +82,7 @@ function showWelcome() {
     const old = await oldAuroraExists(); const cs = lang() === 'cs';
     const nm = 17 * 60 + 20;
     const arcs = [{ s: 14 * 60, e: 15 * 60, c: '#f0a44b', st: 'done' }, { s: 18 * 60, e: 18 * 60 + 45, c: '#3fbf7f', st: 'next' }, { s: 19 * 60, e: 20 * 60, c: '#6f8cff', st: 'later' }, { s: 20 * 60 + 30, e: 21 * 60, c: '#9fb3c4', st: 'later' }];
-    w.innerHTML = '<div class="wtop"><button class="chip frost press" data-a="wLang" data-k="' + (cs ? 'en' : 'cs') + '">' + (cs ? 'EN' : 'CZ') + '</button><button class="chip frost press" data-a="tutorial">' + ico('play', 14, 2) + 'Video 20 s' + '</button></div>'
+    w.innerHTML = '<div class="wtop"><button class="chip frost press" data-a="wLang" data-k="' + (cs ? 'en' : 'cs') + '">' + (cs ? 'EN' : 'CZ') + '</button><button class="chip frost press" data-a="tutorial">' + ico('play', 14, 2) + 'Video 49 s' + '</button></div>'
       + '<div class="wsl" id="wsl">'
       + '<section class="ws"><img class="wlogo" src="logo.svg" alt="aurora"><h1>' + (cs ? 'Tvůj den.<br>Jeden kruh.' : 'Your day.<br>One circle.') + '</h1><p>' + esc(cs ? 'Karty, plán a momenty. Všechno zůstává v telefonu.' : 'Cards, plan and moments. Everything stays on your phone.') + '</p></section>'
       + '<section class="ws"><div class="dialw wdemo">' + dialSVG(arcs, nm) + '<span class="orb" style="pointer-events:none"><span class="n">0:40</span><span class="s">' + esc(cs ? 'do Lekce 4' : 'to Lesson 4') + '</span></span></div><h2>' + esc(cs ? 'Den 06–24 v jednom ciferníku' : 'Your day 06–24 on one dial') + '</h2><p>' + esc(cs ? 'Oblouky jsou tvoje věci v barvě karty. Svítí jen to, co je teď a co je další.' : 'Arcs are your things in their card colour. Only now and next glow.') + '</p></section>'
@@ -155,6 +155,7 @@ async function boot() {
   if (!S.onboarded) { showWelcome(); playIntro(); }
   if (q.get('tab') && RENDER[q.get('tab')]) go(q.get('tab'));
   refreshOldFlag();
+  setTimeout(() => ensureVideoThumbs(), 800);
   if ('serviceWorker' in navigator && location.protocol === 'https:') {
     navigator.serviceWorker.register('sw.js').then(reg => {
       reg.addEventListener('updatefound', () => { const nw = reg.installing; nw && nw.addEventListener('statechange', () => { if (nw.state === 'installed' && navigator.serviceWorker.controller) toast(esc(t('updateReady')), { label: t('reload'), fn: () => location.reload() }); }); });

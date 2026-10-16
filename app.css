@@ -495,3 +495,18 @@ body.viewing #toast{top:calc(var(--st) + 64px);bottom:auto}
 .vcard .vt b{font:800 20px/1 'Bricolage Grotesque';letter-spacing:-.02em}
 .vcard .vt small{font:400 13px/1 Inter;color:var(--ink2)}
 @media (prefers-reduced-motion:reduce){#welcome.reveal .wtop,#welcome.reveal .ws:first-child>*,#welcome.reveal .wfoot{animation:none}}
+
+#vlayer.intro{background:#060b1c}
+#vlayer.intro video{opacity:0;transition:opacity .6s var(--out)}
+#vlayer.intro.playing video{opacity:1}
+#vlayer .splash{position:absolute;inset:0;z-index:3;display:flex;flex-direction:column;align-items:center;justify-content:center;background:url(wall.jpg) center/cover;transition:opacity .6s var(--out),transform .8s var(--out)}
+#vlayer .splash::before{content:"";position:absolute;inset:0;background:radial-gradient(60% 40% at 50% 46%,rgba(255,226,190,.16),transparent 70%),rgba(4,8,18,.18)}
+#vlayer .splash img{position:relative;width:230px;height:auto;filter:drop-shadow(0 8px 30px rgba(0,0,20,.45));animation:splashIn 1.4s var(--out) both,splashBr 4s ease-in-out 1.4s infinite}
+#vlayer .splash .hint{position:absolute;bottom:calc(var(--sb) + 56px);height:44px;padding:0 22px;border-radius:22px;display:flex;align-items:center;font:600 15px/1 Inter;color:var(--ink);animation:hintIn 1s var(--out) .9s both,hintP 2.4s ease-in-out 2s infinite}
+#vlayer.intro.playing .splash{opacity:0;transform:scale(1.06);pointer-events:none}
+#vlayer.intro:not(.playing) .skip{opacity:0;pointer-events:none}
+@keyframes splashIn{from{opacity:0;transform:scale(.9);filter:blur(14px) drop-shadow(0 8px 30px rgba(0,0,20,.45))}to{opacity:1;transform:none;filter:blur(0) drop-shadow(0 8px 30px rgba(0,0,20,.45))}}
+@keyframes splashBr{50%{transform:scale(1.03);filter:drop-shadow(0 8px 30px rgba(0,0,20,.45)) drop-shadow(0 0 22px rgba(255,220,180,.35))}}
+@keyframes hintIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+@keyframes hintP{50%{opacity:.7}}
+@media (prefers-reduced-motion:reduce){#vlayer .splash img,#vlayer .splash .hint{animation:none}}
