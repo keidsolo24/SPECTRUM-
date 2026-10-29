@@ -3,7 +3,7 @@
 const V = { tab: 'home', card: null, spacesMode: 'deck', deckFilter: 'all', deckIdx: 0, boardFilter: 'all', boardSearch: false, boardQ: '', planMode: 'list', planDay: null, planWeek: null, monCursor: null, monSel: null, settingsPage: 'main', showDone: {}, settingsOpen: false };
 const fmtDur = m => m >= 600 ? Math.round(m / 60) + 'h' : Math.floor(m / 60) + ':' + pad(m % 60);
 function deadlineText(dl) { const n = daysBetween(T(), dl); if (n === 0) return t('dueToday'); if (n === 1) return t('tomorrow').toLowerCase(); if (n < 0) return t('overdueBy', -n); return t('daysLeft', n); }
-function ruleOf(card) { const r = cardItems(card.id).find(i => i.repeat); return r ? (r.repeat === 'weekdays' ? t('weekdays') : r.repeat === 'weekly' ? t('everyWeek') : t('everyDay')) : ''; }
+function ruleOf(card) { if (card.type === 'habit') return goalText(goalOf(card)); const r = cardItems(card.id).find(i => i.repeat); return r ? repText(r) : ''; }
 function kickOf(card) { return '<span class="kick cap" style="color:var(--ink)"><span class="led" style="--c:' + card.color + '"></span>' + esc(card.type === 'habit' ? t('habit') : t('project')) + (card.type === 'habit' && ruleOf(card) ? ' · ' + esc(ruleOf(card)) : '') + '</span>'; }
 function checkBtn(i, d, color) { const on = isDone(i, d); return '<button class="c0' + (on ? ' on' : '') + '" style="--c:' + (color || cardColor(i.card)) + '" data-a="toggle" data-id="' + i.id + '" data-d="' + d + '" aria-label="' + esc(t('done')) + '" aria-pressed="' + on + '">' + ico('check', 14, 3) + '</button>'; }
 function itemRow(i, d, opts = {}) {
@@ -48,7 +48,7 @@ function tileHTML(c) {
   let num, small, sub, viz;
   if (c.type === 'habit') {
     const w = habitWeek(c.id), td = dow(d);
-    num = w.filter(Boolean).length; small = '/ 7'; sub = t('thisWeek');
+    num = w.filter(Boolean).length; small = '/ ' + goalOf(c); sub = t('thisWeek');
     viz = '<span class="vd" style="--c:' + c.color + '">' + w.map((on, k) => '<i class="' + (on ? 'on' : '') + (k === td && on ? ' td' : '') + '"></i>').join('') + '</span>';
   } else {
     const ps = projectStats(c.id);
@@ -138,8 +138,8 @@ function deckCardHTML(c, idx, total) {
   const d = T();
   let ring, ringTx, sub, nextHTML, rows = '';
   if (c.type === 'habit') {
-    const w = habitWeek(c.id); const n = w.filter(Boolean).length;
-    ring = ringSVG(66, n / 7, c.color); ringTx = n + '/7';
+    const w = habitWeek(c.id); const n = w.filter(Boolean).length; const g = goalOf(c);
+    ring = ringSVG(66, n / g, c.color); ringTx = n + '/' + g;
     const st = streakOf(c.id); sub = esc(t('streak')) + ' <b>' + st + ' ' + esc(st === 1 ? t('day1') : t('days')) + '</b> · ' + esc(t('best', bestStreak(c.id)));
     const its = cardItems(c.id).filter(i => occurs(i, d));
     const nx = its.find(i => !isDone(i, d)) || its[0] || cardItems(c.id).find(i => !i.done);
@@ -176,7 +176,7 @@ function renderSpaces() {
   } else {
     body = '<div class="stack">' + cs.map(c => {
       let sub, ring;
-      if (c.type === 'habit') { const n = habitWeek(c.id).filter(Boolean).length; ring = ringSVG(48, n / 7, c.color, 3.5); sub = t('habit') + ' · ' + n + '/7 ' + t('thisWeek'); }
+      if (c.type === 'habit') { const n = habitWeek(c.id).filter(Boolean).length; const g = goalOf(c); ring = ringSVG(48, n / g, c.color, 3.5); sub = t('habit') + ' · ' + n + '/' + g + ' ' + t('thisWeek'); }
       else { const ps = projectStats(c.id); ring = ringSVG(48, ps.total ? ps.done / ps.total : 0, c.color, 3.5); sub = t('project') + ' · ' + ps.open + ' ' + t('open') + (c.deadline ? ' · ' + deadlineText(c.deadline) : ''); }
       return '<button class="lrow frost press" data-a="openCard" data-id="' + c.id + '"><span style="position:relative;width:48px;height:48px;flex:none">' + ring + '<span class="led" style="--c:' + c.color + ';position:absolute;left:20px;top:20px"></span></span><span class="tx"><span>' + esc(c.name) + '</span><small>' + esc(sub) + '</small></span>' + ico('chev', 16, 2.2) + '</button>';
     }).join('') + '<button class="lrow frost press" data-a="newCard"><span class="ci" style="width:48px;height:48px;border-radius:24px">' + ico('plus', 20, 1.8) + '</span><span class="tx"><span>' + esc(t('newCard')) + '</span><small>' + esc(t('newCardSub')) + '</small></span></button></div>';
@@ -218,8 +218,9 @@ function renderCard() {
     const wd = w.map((on, k) => '<span><i class="' + (on ? 'on' : '') + (k === td ? ' td' : '') + (k > td ? ' fu' : '') + '"></i>' + WD1[lang()][k] + '</span>').join('');
     const st = streakOf(c.id), ms = monthCount(c.id);
     const wk = [3, 2, 1, 0].map(k => { const ws = addD(weekStart(d), -7 * k); return [0, 1, 2, 3, 4, 5, 6].filter(j => cardDaySet(c.id).has(addD(ws, j))).length; });
-    hero = '<section class="hero frost" style="--c:' + c.color + '"><span class="cap">' + esc(t('thisWeekCap')) + '</span><div class="num" style="font-size:60px;margin-top:14px">' + n + '<small style="font-size:16px">/ 7 ' + esc(t('days')) + '</small></div><div class="wdots">' + wd + '</div>'
-      + '<div class="ringw">' + segRing(112, 7, w, c.color, 5, td) + '<span><span style="font:800 24px/1 \'Bricolage Grotesque\'">' + Math.round(n / 7 * 100) + '%</span><span class="muted" style="font:400 11px/1 Inter">' + esc(t('ofTheWeek')) + '</span></span></div></section>'
+    const g = goalOf(c); const met = n >= g;
+    hero = '<section class="hero frost" style="--c:' + c.color + '"><span class="cap">' + esc(t('thisWeekCap')) + ' · <button class="goalb" data-a="editGoal">' + esc(t('goal')) + ' ' + esc(goalText(g)) + '</button></span><div class="num" style="font-size:60px;margin-top:14px">' + n + '<small style="font-size:16px">/ ' + g + ' ' + esc(t('days')) + '</small></div><div class="wdots">' + wd + '</div>'
+      + '<div class="ringw">' + segRing(112, g, Array.from({ length: g }, (_, k) => k < n), c.color, 5, -1) + '<span><span style="font:800 24px/1 \'Bricolage Grotesque\'">' + (met ? '✓' : Math.round(n / g * 100) + '%') + '</span><span class="muted" style="font:400 11px/1 Inter">' + esc(met ? t('goalMet') : t('weekGoal')) + '</span></span></div></section>'
       + '<div class="grid2"><div class="tile frost" style="min-height:96px"><span class="top"><span class="ci">' + ico('flame', 17, 1.7) + '</span><span class="fl"><span>' + esc(t('streak')) + '</span><small>' + esc(t('best', bestStreak(c.id))) + '</small></span></span><span class="bot"><span class="num">' + st + '<small>' + esc(st === 1 ? t('day1') : t('days')) + '</small></span>' + spark([1, 2, 3, 4, 5].map(k => Math.min(k, st + 1)), c.color, 54, 24) + '</span></div>'
       + '<div class="tile frost" style="min-height:96px"><span class="top"><span class="ci">' + ico('cal', 17, 1.7) + '</span><span class="fl"><span>' + esc(MON[lang()][new Date().getMonth()]) + '</span><small>' + esc(t('weekDone')) + '</small></span></span><span class="bot"><span class="num">' + ms + '<small>' + esc(t('days')) + '</small></span>' + spark(wk, c.color, 54, 24) + '</span></div></div>'
       + heatHTML(c);
@@ -237,7 +238,7 @@ function renderCard() {
   const sd = V.showDone[c.id];
   const tasks = '<div class="sec"><span class="cap" style="display:flex;justify-content:space-between;align-items:center">' + esc(t('tasks')) + (doneL.length ? '<button class="muted" style="letter-spacing:.06em;text-transform:none;font:500 12.5px/1 Inter" data-a="toggleShowDone">' + esc(sd ? t('hideDone') : t('showDone', doneL.length)) + ' ' + ico(sd ? 'chevL' : 'chevD', 12, 2.4) + '</button>' : '') + '</span><section class="frost solid" style="border-radius:26px;padding:4px 12px">'
     + open.map(i => itemRow(i, i.repeat ? d : (i.date || d), { withCard: false })).join('') + (sd ? doneL.map(i => itemRow(i, i.date || d, { withCard: false })).join('') : '')
-    + '<div class="addline"><span class="ci" style="width:24px;height:24px;border-radius:12px;border-style:dashed">' + ico('plus', 14, 2.4) + '</span><input id="addTaskIn" enterkeyhint="done" autocomplete="off" placeholder="' + esc(t('addTask')) + '" aria-label="' + esc(t('addTask')) + '"></div></section></div>';
+    + '<div class="addline"><span class="ci" style="width:24px;height:24px;border-radius:12px;border-style:dashed">' + ico('plus', 14, 2.4) + '</span><input id="addTaskIn" enterkeyhint="done" autocomplete="off" placeholder="' + esc(lang() === 'cs' ? 'Přidat úkol, např. test pá 14:00' : 'Add a task, e.g. quiz fri 2pm') + '" aria-label="' + esc(t('addTask')) + '"><button class="addgo cr press" id="addTaskGo" hidden aria-label="' + esc(t('addIt')) + '">' + ico('arrow', 15, 2.4) + '</button></div><div class="addhint" id="addTaskHint" hidden></div></section></div>';
   const ps = projectStats(c.id);
   const noticed = S.nudges && c.type === 'project' && ps.noDay ? '<div class="sec"><section class="noticed frost"><span class="tx"><span class="cap">' + esc(t('noted')) + '</span>' + esc(ps.noDay === 1 ? t('noDayTask1') : t('noDayTasks', ps.noDay)) + '</span><button class="chip cr press" data-a="when" data-id="' + cardItems(c.id).find(i => !i.repeat && !i.done && !i.date).id + '">' + esc(t('pickDay')) + '</button></section></div>' : '';
   const ms = cardMoments(c.id);
@@ -248,7 +249,16 @@ function renderCard() {
     + '<div class="stack" style="margin-top:18px">' + hero + '</div>' + todayHTML + tasks + noticed + mom + note;
   setAura([c.color, c.color, S.cards.find(x => x.id !== c.id)?.color || '#6f8cff']);
   const inp = $('#addTaskIn');
-  inp.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); const v = inp.value.trim(); if (!v) return; const p = NL(v); const it = { id: uid(), t: stripSpans(v, p.spans) || v, card: c.id, created: T() }; if (p.date) it.date = p.date; if (p.time) it.time = p.time; if (p.repeat) { it.repeat = p.repeat; it.doneDates = []; if (!it.date) it.date = T(); } S.items.push(it); save(); const y = el.scrollTop; renderCard(); el.scrollTop = y; const ni = $('#addTaskIn'); ni && ni.focus({ preventScroll: true }); haptic(); } });
+  const hint = $('#addTaskHint'), go2 = $('#addTaskGo');
+  const paintHint = () => { const v = inp.value.trim(); go2.hidden = !v; if (!v) { hint.hidden = true; return; } const p = NL(v); const ch = [];
+    if (p.repeat) ch.push(ico('repeat', 13, 2.2) + esc(p.repeat === 'days' ? daysText(p.days) : repText({ repeat: p.repeat })));
+    else if (p.date) ch.push(ico('cal', 13, 2.2) + esc(dayShort(p.date)));
+    if (p.time) ch.push(ico('clock', 13, 2.2) + p.time);
+    hint.innerHTML = ch.length ? ch.map(x => '<span class="chip in">' + x + '</span>').join('') : '<span class="muted">' + esc(lang() === 'cs' ? 'Bez dne · den přidáš i později' : 'No day · add one later') + '</span>'; hint.hidden = false; };
+  const addIt = () => { const v = inp.value.trim(); if (!v) return; const p = NL(v); const it = { id: uid(), t: stripSpans(v, p.spans) || v, card: c.id, created: T() }; if (p.date) it.date = p.date; if (p.time) { it.time = p.time; it.dur = 45; it.remind = S.push.def != null ? S.push.def : 10; } if (p.repeat) { it.repeat = p.repeat; if (p.repeat === 'days') it.days = p.days; it.doneDates = []; if (!it.date) it.date = T(); } S.items.push(it); save(); const y = el.scrollTop; renderCard(); el.scrollTop = y; const ni = $('#addTaskIn'); ni && ni.focus({ preventScroll: true }); haptic(); toast(esc(it.date || it.repeat ? t('planned', it.repeat ? repText(it) : dayName(it.date) + (it.time ? ' ' + it.time : '')) : t('undated'))); };
+  inp.addEventListener('input', paintHint);
+  inp.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); addIt(); } });
+  go2.addEventListener('click', e => { e.preventDefault(); addIt(); });
   const ta = $('#cardNote'); let nt = null; ta.addEventListener('input', () => { clearTimeout(nt); nt = setTimeout(() => { c.note = ta.value; save(); }, 300); }); ta.addEventListener('blur', () => { c.note = ta.value; save(); });
   const fit = () => { ta.style.height = 'auto'; ta.style.height = Math.max(90, ta.scrollHeight) + 'px'; }; ta.addEventListener('input', fit); requestAnimationFrame(fit);
 }
@@ -273,13 +283,14 @@ function boardList() {
 }
 function tileMoment(m) {
   const c = cardColor(m.card);
-  if (m.kind === 'note') return '<button class="mt note press" style="--c:' + c + '" data-a="viewMoment" data-id="' + m.id + '">' + (m.card && cardById(m.card) ? '<span class="led" style="--c:' + c + '"></span>' : '<span class="led" style="--c:rgba(243,234,216,.6);box-shadow:none"></span>') + '<div class="nt">' + esc(m.note) + '</div><div class="dt">' + esc(dayShort(m.d)) + '</div>' + (m.pin ? '<span class="pin frost">' + ico('pin', 14, 1.9) + '</span>' : '') + '</button>';
+  if (m.kind === 'note') return '<button class="mt note press" style="--c:' + c + '" data-a="viewMoment" data-id="' + m.id + '">' + (m.card && cardById(m.card) ? '<span class="led" style="--c:' + c + '"></span>' : '<span class="led" style="--c:rgba(243,234,216,.6);box-shadow:none"></span>') + '<div class="nt">' + esc(m.note) + '</div><div class="dt">' + esc(dayShort(m.d)) + (m.planned && itemById(m.planned) ? ' · <span class="plt">' + ico('cal', 11, 2.4) + esc(t('inPlan')) + '</span>' : '') + '</div>' + (m.pin ? '<span class="pin frost">' + ico('pin', 14, 1.9) + '</span>' : '') + '</button>';
   const u = mediaNow(m.img); const ar = 'aspect-ratio:1/' + clamp(m.r || 1, .55, 1.8).toFixed(3);
   const media = m.kind === 'video' ? (m.thumb ? '<img src="' + mediaNow(m.thumb) + '" alt="" style="' + ar + '">' : '<video src="' + u + '#t=0.1" muted playsinline preload="auto" style="' + ar + '"></video>') + '<span class="play frost">' + ico('play', 18, 2) + '</span>' + (m.dur ? '<span class="dur frost">' + Math.floor(m.dur / 60) + ':' + pad(Math.round(m.dur % 60)) + '</span>' : '') : '<img src="' + u + '" alt="' + esc(m.note || '') + '" style="' + ar + '" loading="lazy">';
-  return '<button class="mt press" data-a="viewMoment" data-id="' + m.id + '">' + media + (m.note ? '<span class="capg">' + (m.card && cardById(m.card) ? '<span class="dot" style="--c:' + c + ';margin-right:6px;vertical-align:1px"></span>' : '') + esc(m.note) + '</span>' : '') + (m.pin ? '<span class="pin frost">' + ico('pin', 14, 1.9) + '</span>' : '') + '</button>';
+  return '<button class="mt press" data-a="viewMoment" data-id="' + m.id + '">' + media + planBadge(m) + (m.note ? '<span class="capg">' + (m.card && cardById(m.card) ? '<span class="dot" style="--c:' + c + ';margin-right:6px;vertical-align:1px"></span>' : '') + esc(m.note) + '</span>' : '') + (m.pin ? '<span class="pin frost">' + ico('pin', 14, 1.9) + '</span>' : '') + '</button>';
 }
+function planBadge(m) { return m.planned && itemById(m.planned) ? '<span class="plb frost">' + ico('cal', 12, 2.4) + esc(t('inPlan')) + '</span>' : ''; }
 function boardGrid(ms) {
-  return ms.length ? '<div class="masonry">' + ms.map(tileMoment).join('') + '</div>' : '<section class="frost solid" style="border-radius:30px;padding:26px 20px;text-align:center"><p style="font:400 15px/1.45 Inter;color:var(--ink2);margin:0 0 18px">' + esc(S.moments.length ? (lang() === 'cs' ? 'Nic neodpovídá filtru.' : 'Nothing matches this filter.') : t('boardEmpty')) + '</p><button class="pbtn cr press" style="width:100%" data-a="add" data-mode="photo">' + esc(t('capture')) + '</button></section>';
+  return ms.length ? '<div class="masonry">' + ms.map(tileMoment).join('') + '</div>' : '<section class="frost solid" style="border-radius:30px;padding:26px 20px;text-align:center"><p style="font:400 15px/1.45 Inter;color:var(--ink2);margin:0 0 18px">' + esc(S.moments.length ? (lang() === 'cs' ? 'Nic neodpovídá filtru.' : 'Nothing matches this filter.') : t('boardEmpty')) + '</p><button class="pbtn cr press" style="width:100%" data-a="add" data-mode="note">' + esc(lang() === 'cs' ? 'Hodit nápad' : 'Add an idea') + '</button></section>';
 }
 function renderBoard() {
   const el = $('#s-board'); const ms = boardList();
@@ -436,6 +447,7 @@ function applyLook() {
 function srow(a, label, right, extra = '') { return '<button class="srow" data-a="' + a + '"' + extra + '>' + label + '<span class="r">' + right + ico('chev', 15, 2.2) + '</span></button>'; }
 function renderSettings() {
   const el = $('#s-settings');
+  if (V.settingsPage === 'notif') { el.innerHTML = notifPage(); mountNotifPage(); return; }
   if (V.settingsPage === 'look') {
     const wl = [['aurora', t('wallAurora'), 'background-image:url(wall.jpg)'], ['photo', S.wallKey ? '' : t('ownPhoto'), S.wallKey ? 'background-image:url(' + mediaNow(S.wallKey) + ')' : 'background:rgba(255,255,255,.08)']];
     el.innerHTML = '<div class="hdr"><button class="cb frost press" data-a="settingsBack" aria-label="Back">' + ico('back', 20, 2.2) + '</button><span></span></div><h1 class="t1" style="margin-bottom:18px">' + esc(t('appearance')) + '</h1>'
@@ -451,6 +463,7 @@ function renderSettings() {
   el.innerHTML = '<div class="hdr"><button class="cb frost press" data-a="closeSettings" aria-label="Back">' + ico('back', 20, 2.2) + '</button><span></span></div><h1 class="t1" style="margin-bottom:18px">' + esc(t('settings')) + '</h1>'
     + '<button class="acct frost press" data-a="editName"><span class="avatar">' + esc(initials) + '</span><span style="display:flex;flex-direction:column;gap:6px;min-width:0;flex:1"><span style="font:600 17px/1.1 Inter">' + esc(S.name || t('yourName')) + '</span><span class="muted" style="font:400 13px/1 Inter">' + esc(t('savedLocal')) + '</span></span>' + ico('edit', 18, 2) + '</button>'
     + '<div class="sec"><span class="cap">' + esc(t('look')) + '</span><section class="grp frost solid"><button class="srow" data-a="lookPage" style="min-height:72px"><span style="flex:none;position:relative;width:34px;height:50px;border-radius:9px;overflow:hidden;' + (S.wall === 'photo' && S.wallKey ? 'background:url(' + mediaNow(S.wallKey) + ') center/cover' : S.wall !== 'aurora' && WALLS[S.wall] ? 'background:' + WALLS[S.wall].css : 'background:url(wall.jpg) center/cover') + ';box-shadow:inset 0 0 0 1px rgba(255,255,255,.3)"><i style="position:absolute;left:4px;right:4px;top:8px;height:16px;border-radius:5px;background:rgba(255,255,255,.3)"></i><i style="position:absolute;left:4px;right:4px;bottom:5px;height:7px;border-radius:4px;background:rgba(255,255,255,.4)"></i></span><span class="tx">' + esc(t('appearance')) + '<small>' + esc((S.surface === 'solid' ? t('solid') : t('glass')) + ' · ' + (S.wall === 'photo' ? t('photo') : t('wall' + S.wall.charAt(0).toUpperCase() + S.wall.slice(1)))) + '</small></span><span class="r">' + ico('chev', 15, 2.2) + '</span></button></section></div>'
+    + '<div class="sec"><span class="cap">' + esc(t('notif')) + '</span><section class="grp frost solid"><button class="srow" data-a="notifPage"><span class="ci" style="width:30px;height:30px;border-radius:15px;border:0;background:rgba(255,255,255,.08)">' + ico(S.push.on ? 'bell' : 'bellOff', 15, 2) + '</span><span class="tx">' + esc(t('notif')) + '<small>' + esc(S.push.on ? (lang() === 'cs' ? 'Zapnuto · připomínky k plánům' : 'On · reminders for your plans') : (lang() === 'cs' ? 'Vypnuto · připomínky k plánům' : 'Off · reminders for your plans')) + '</small></span><span class="r">' + ico('chev', 15, 2.2) + '</span></button></section></div>'
     + '<div class="sec"><span class="cap">' + esc(t('homeCap')) + '</span><section class="grp frost solid"><button class="srow" data-a="toggleNudges"><span class="tx">' + esc(t('nudges')) + '<small>' + esc(t('nudgesSub')) + '</small></span><span class="tg' + (S.nudges ? ' on' : '') + '" style="margin-left:auto"></span></button><button class="srow" data-a="toggleWeekly"><span class="tx">' + esc(t('weekly')) + '<small>' + esc(t('weeklySub')) + '</small></span><span class="tg' + (S.weekly ? ' on' : '') + '" style="margin-left:auto"></span></button></section></div>'
     + '<div class="sec"><span class="cap">Video</span><button class="vcard press" data-a="tutorial"><img src="tutorial-poster.jpg" alt=""><span class="vplay frost">' + ico('play', 22, 2) + '</span><span class="vt"><b>' + esc(lang() === 'cs' ? 'Jak Aurora funguje' : 'How Aurora works') + '</b><small>' + esc(lang() === 'cs' ? '49 s · krok po kroku' : '49 s · step by step') + '</small></span></button></div>'
     + '<div class="sec"><span class="cap">' + esc(t('general')) + '</span><section class="grp frost solid">' + srow('pickLang', esc(t('language')), esc(t('lang_' + S.lang))) + srow('tutorial', esc(t('tutorial')), '49 s') + srow('installInfo', esc(t('install')), '') + (V.oldExists ? srow('importOld', '<span class="tx">' + esc(t('importOld')) + '<small>' + esc(t('importOldSub')) + '</small></span>', '') : '') + '</section></div>'

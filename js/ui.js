@@ -38,6 +38,10 @@ const IC = {
   cal: '<rect x="3.5" y="5" width="17" height="15.5" rx="3.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/>',
   clock: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
   repeat: '<path d="M4 11V9a3 3 0 0 1 3-3h12l-3-3M20 13v2a3 3 0 0 1-3 3H5l3 3"/>',
+  bell: '<path d="M6 16v-5a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20.5a2 2 0 0 0 4 0"/>',
+  dur: '<path d="M7 3h10M7 21h10M8 3c0 5 8 5 8 9s-8 4-8 9M16 3c0 5-8 5-8 9"/>',
+  bellOff: '<path d="M6 16v-5a6 6 0 0 1 9.5-4.9M18 11v5l1.5 2H8"/><path d="M10 20.5a2 2 0 0 0 4 0M4 4l16 16"/>',
+  server: '<rect x="4" y="4" width="16" height="7" rx="2"/><rect x="4" y="13" width="16" height="7" rx="2"/><path d="M8 7.5h.01M8 16.5h.01"/>',
 };
 function ico(n, s = 20, w = 2) { return '<svg width="' + s + '" height="' + s + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="' + w + '" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (IC[n] || '') + '</svg>'; }
 const haptic = () => { try { navigator.vibrate && navigator.vibrate(8); } catch (e) {} };
@@ -110,7 +114,8 @@ function toast(msg, action) {
 const SH = { open: false, onClose: null, dirty: null };
 function openSheet(o) {
   const el = $('#sheet');
-  el.innerHTML = '<div class="grab"><i></i></div><div class="sh"><div class="l">' + (o.left !== false ? '<button class="lnk" data-a="sheetCancel">' + esc(o.leftLabel || t('cancel')) + '</button>' : '') + '</div><div class="tl">' + esc(o.title || '') + '</div><div class="rt">' + (o.right ? '<button class="save cr press" id="sheetSave"' + (o.rightDisabled ? ' disabled' : '') + '>' + esc(o.right) + '</button>' : '') + '</div></div><div class="sb">' + o.body + '</div>';
+  el.className = 'frost' + (o.cls ? ' ' + o.cls : '');
+  el.innerHTML = '<div class="grab"><i></i></div><div class="sh"><div class="l">' + (o.leftHTML || (o.left !== false ? '<button class="lnk" data-a="sheetCancel">' + esc(o.leftLabel || t('cancel')) + '</button>' : '')) + '</div><div class="tl">' + (o.titleHTML || esc(o.title || '')) + '</div><div class="rt">' + (o.right ? '<button class="save cr press" id="sheetSave"' + (o.rightDisabled ? ' disabled' : '') + '>' + esc(o.right) + '</button>' : '') + '</div></div><div class="sb">' + o.body + '</div>';
   SH.onClose = o.onClose || null; SH.onSave = o.onSave || null; SH.dirty = o.dirty || null; SH.open = true;
   if (o.right) $('#sheetSave').onclick = () => { if (SH.onSave) SH.onSave(); };
   $('#scrim').classList.add('on'); el.classList.remove('drag');
@@ -156,17 +161,51 @@ function confirmSheet(text, okLabel, fn, danger = true) {
 })();
 $('#scrim').addEventListener('click', () => closeSheet());
 
-/* ---------- keyboard / visual viewport ---------- */
+/* ---------- keyboard / visual viewport ----------
+   iOS: the sheet sits right on top of the keyboard. We move it up as soon as a field
+   gets focus (with the last known keyboard height), so iOS never needs to pan the page,
+   then correct it from visualViewport. The page itself never scrolls. */
+const KB = { h: 0, last: 0, open: false };
 (function vv() {
-  const v = window.visualViewport; if (!v) return;
-  const up = () => {
-    let kb = Math.max(0, window.innerHeight - v.height - v.offsetTop);
-    if (kb > 80) kb += Math.max(0, document.body.clientHeight - window.innerHeight);
-    document.documentElement.style.setProperty('--kb', kb + 'px');
-    document.documentElement.style.setProperty('--vvh', v.height + 'px');
+  const v = window.visualViewport; const root = document.documentElement.style;
+  try { KB.last = +localStorage.getItem('aurora-kb') || 0; } catch (e) {}
+  const isField = el => !!el && (el.tagName === 'TEXTAREA' || el.isContentEditable || (el.tagName === 'INPUT' && !/^(checkbox|radio|range|file|button|submit|reset|date|time|datetime-local|month|week|color|hidden)$/i.test(el.type)));
+  const apply = kb => {
+    kb = Math.round(kb);
+    if (Math.abs(kb - KB.h) < 2) return;
+    KB.h = kb; KB.open = kb > 0;
+    root.setProperty('--kb', kb + 'px');
+    document.body.classList.toggle('kbopen', KB.open);
   };
-  v.addEventListener('resize', up); v.addEventListener('scroll', up); up();
+  const measure = () => {
+    if (!v) return;
+    if (window.scrollY || document.documentElement.scrollTop) window.scrollTo(0, 0);
+    root.setProperty('--vvh', v.height + 'px');
+    let kb = window.innerHeight - v.height - v.offsetTop;
+    if (kb < 80) kb = 0;
+    else { kb += Math.max(0, document.body.clientHeight - window.innerHeight); KB.last = kb; try { localStorage.setItem('aurora-kb', String(Math.round(kb))); } catch (e) {} }
+    if (!kb && isField(document.activeElement) && KB.h && Date.now() - KB.focusT < 700) return; // keyboard still animating in
+    apply(kb);
+  };
+  let raf = 0, until = 0;
+  const follow = ms => { until = Math.max(until, Date.now() + ms); if (raf) return; const step = () => { measure(); if (Date.now() < until) raf = requestAnimationFrame(step); else raf = 0; }; raf = requestAnimationFrame(step); };
+  document.addEventListener('focusin', e => {
+    if (!isField(e.target)) return;
+    KB.focusT = Date.now();
+    if (e.target.closest('#sheet') && KB.last && !KB.open && /iP(hone|ad|od)/.test(navigator.userAgent)) apply(KB.last);
+    follow(900);
+  });
+  document.addEventListener('focusout', () => { setTimeout(() => { if (!isField(document.activeElement)) { apply(0); window.scrollTo(0, 0); follow(600); } }, 60); });
+  if (v) { v.addEventListener('resize', () => follow(300)); v.addEventListener('scroll', () => follow(300)); }
+  window.addEventListener('orientationchange', () => follow(800));
+  measure();
 })();
+/* keep a focused field inside a scrolling screen visible above the keyboard */
+document.addEventListener('focusin', e => {
+  const el = e.target; if (!el || el.closest('#sheet') || !el.matches('input,textarea')) return;
+  const scr = el.closest('.scr'); if (!scr) return;
+  setTimeout(() => { const r = el.getBoundingClientRect(); const vh = (window.visualViewport ? window.visualViewport.height : window.innerHeight); const room = vh - 24; if (r.bottom > room || r.top < 90) scr.scrollBy({ top: r.bottom - room + 40, behavior: RM ? 'auto' : 'smooth' }); }, 380);
+});
 
 /* ---------- video manual ---------- */
 function playTutorial() {

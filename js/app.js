@@ -123,7 +123,7 @@ document.addEventListener('keydown', e => {
   if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('[role="button"][data-a]')) { e.preventDefault(); const fn = ACT[e.target.dataset.a]; fn && fn(e.target, e); }
   if (e.key === 'Escape') { if ($('#vlayer').classList.contains('on')) ACT.closeVideo(); else if (SH.open) closeSheet(); else if ($('#viewer').classList.contains('on')) closeViewer(); else if (V.card) closeCard(); else if (V.settingsOpen) closeSettings(); }
 });
-$('#plusBtn').addEventListener('click', () => { const ctx = {}; if (V.tab === 'board') ctx.mode = 'photo'; if (V.tab === 'plan' && V.planMode === 'list') ctx.date = V.planDay; if (V.tab === 'spaces' && V.spacesMode === 'deck') { const c = filteredCards()[V.deckIdx]; if (c) ctx.card = c.id; } openAdd(ctx); });
+$('#plusBtn').addEventListener('click', () => { const ctx = {}; if (V.tab === 'board') ctx.mode = 'note'; if (V.tab === 'plan' && V.planMode === 'list') ctx.date = V.planDay; if (V.tab === 'spaces' && V.spacesMode === 'deck') { const c = filteredCards()[V.deckIdx]; if (c) ctx.card = c.id; } openAdd(ctx); });
 // edge swipe back for pushed screens
 (function edgeBack() {
   let s = null;
@@ -154,6 +154,9 @@ async function boot() {
   if (S.wall === 'ember' || S.wall === 'night') { S.wall = 'aurora'; save(); applyLook(); }
   if (!S.onboarded) { showWelcome(); playIntro(); }
   if (q.get('tab') && RENDER[q.get('tab')]) go(q.get('tab'));
+  if (q.get('item') && S.onboarded) { setTimeout(() => openDeepLink(location.href), 300); }
+  if (q.has('item') || q.has('d')) { try { history.replaceState(null, '', location.pathname); } catch (e) {} }
+  setTimeout(() => pushBoot(), 1200);
   refreshOldFlag();
   setTimeout(() => ensureVideoThumbs(), 800);
   if ('serviceWorker' in navigator && location.protocol === 'https:') {

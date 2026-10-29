@@ -1,6 +1,6 @@
 'use strict';
 /* ============ CORE: utils, i18n, storage, model ============ */
-const VERSION = '1.0.0';
+const VERSION = '15';
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -108,6 +108,22 @@ const L = {
   wallAurora: ['Aurora', 'Aurora'], wallEmber: ['Ember', 'Žhar'], wallNight: ['Night', 'Noc'],
   tour: ['Tour', 'Prohlídka'], lang_en: ['English', 'English'], lang_cs: ['Čeština', 'Čeština'],
 };
+Object.assign(L, {
+  idea: ['Idea', 'Nápad'], ideaPh: ['An idea, a link, a thought…', 'Nápad, odkaz, myšlenka…'], throwIt: ['Add', 'Hodit'], addBtn: ['Add', 'Přidat'],
+  planPh: ['e.g. Workout tomorrow at 6pm', 'např. Trénink zítra v 18'], selDays: ['Days', 'Vybrané'], dailyS: ['Daily', 'Denně'], wkdaysS: ['Weekdays', 'Všední'],
+  otherDay: ['Other day', 'Jiný den'], noTime: ['No time', 'Bez času'], otherTime: ['Other', 'Jiný'], length: ['Length', 'Délka'], remind: ['Remind', 'Připomenout'],
+  rOff: ['Off', 'Ne'], rAt: ['At time', 'V čas'], r10: ['10 min before', '10 min předem'], r30: ['30 min', '30 min'], r60: ['1 h', '1 h'], rEve: ['Evening before', 'Večer předem'],
+  optional: ['optional', 'nepovinné'], countsStreak: ['counts toward the streak', 'počítá se do série'], projectT: ['project', 'projekt'],
+  anyTimeS: ['any time', 'kdykoli'], noTimeS: ['no time', 'bez času'], forDur: ['for {0}', 'na {0}'], startFrom: ['from {0}', 'od {0}'],
+  ideaLands: ['Lands on Board, on top.', 'Padne na Board, nahoru.'], ideaLandsCard: ['Lands on Board and in {0}.', 'Padne na Board a do karty {0}.'],
+  ideaAdded: ['Idea added', 'Nápad přidán'], photoVideo: ['Photo or video', 'Fotka nebo video'], removeFile: ['Remove', 'Odebrat'],
+  plan2: ['Plan it', 'Naplánovat'], inPlan: ['in plan', 'v plánu'], goal: ['Goal', 'Cíl'], goalSub: ['How many days a week?', 'Kolik dní v týdnu?'],
+  ofGoal: ['of {0}', 'z {0}'], weekGoal: ['weekly goal', 'cíl týdne'], goalMet: ['Goal met', 'Cíl splněn'],
+  notif: ['Notifications', 'Notifikace'], notifOn: ['On', 'Zapnuto'], notifOff: ['Off', 'Vypnuto'],
+  remindAt: ['Reminds at <b>{0}</b>', 'Připomene v <b>{0}</b>'], lands2: ['Lands in Plan: <b>{0}</b>', 'Padne do Plánu: <b>{0}</b>'],
+  enableAsk: ['Get reminders for your plans?', 'Chceš připomínky k plánům?'], enable: ['Turn on', 'Zapnout'],
+  clearTx: ['Clear', 'Vymazat'], weekendsS: ['weekends', 'víkendy'], editT: ['Edit', 'Upravit'],
+});
 const WD = { en: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], cs: ['Po', 'Út', 'St', 'Čt', 'Pá', 'So', 'Ne'] };
 const WD1 = { en: ['M', 'T', 'W', 'T', 'F', 'S', 'S'], cs: ['P', 'Ú', 'S', 'Č', 'P', 'S', 'N'] };
 const MON = { en: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'], cs: ['Leden', 'Únor', 'Březen', 'Duben', 'Květen', 'Červen', 'Červenec', 'Srpen', 'Září', 'Říjen', 'Listopad', 'Prosinec'] };
@@ -142,6 +158,7 @@ function save() {
   saveT = setTimeout(async () => {
     try { await DB.set('kv', 'state', JSON.parse(JSON.stringify(S))); saveFails = 0; }
     catch (e) { saveFails++; try { localStorage.setItem('aurora-glass-state', JSON.stringify(S)); } catch (_) {} }
+    if (typeof pushSchedule === 'function') pushSchedule();
   }, 120);
 }
 async function loadState() {
@@ -151,13 +168,14 @@ async function loadState() {
 }
 function blankState() {
   const cs = (navigator.language || '').toLowerCase().startsWith('cs') || (navigator.language || '').toLowerCase().startsWith('sk');
-  return { v: 1, name: '', lang: cs ? 'cs' : 'en', nudges: true, weekly: true, wall: 'aurora', wallKey: null, surface: 'glass', aura: true, dim: 22, cards: [], items: [], moments: [], onboarded: false, lastCard: null, created: T() };
+  return { v: 1, name: '', lang: cs ? 'cs' : 'en', nudges: true, weekly: true, wall: 'aurora', wallKey: null, surface: 'glass', aura: true, dim: 22, cards: [], items: [], moments: [], onboarded: false, lastCard: null, created: T(), push: { on: false, url: '', key: '', id: null, secret: null, def: 10, asked: false } };
 }
 function migrate(s) {
   const b = blankState();
   const o = Object.assign(b, s || {});
   o.cards = (o.cards || []).filter(Boolean); o.items = (o.items || []).filter(Boolean); o.moments = (o.moments || []).filter(Boolean);
-  o.items.forEach(i => { if (i.repeat && !Array.isArray(i.doneDates)) i.doneDates = []; });
+  o.items.forEach(i => { if (i.repeat && !Array.isArray(i.doneDates)) i.doneDates = []; if (i.repeat === 'days' && !Array.isArray(i.days)) i.days = [dow(i.date || T())]; if (i.time && i.remind === undefined) i.remind = 10; });
+  o.push = Object.assign({ on: false, url: '', key: '', id: null, secret: null, def: 10, asked: false }, o.push || {});
   return o;
 }
 
@@ -218,6 +236,7 @@ function occurs(i, d) {
   if (d < start) return false;
   if (i.repeat === 'weekdays') return dow(d) < 5;
   if (i.repeat === 'weekly') return dow(d) === dow(start);
+  if (i.repeat === 'days') return (i.days || []).includes(dow(d));
   return true;
 }
 const isDone = (i, d) => i.repeat ? (i.doneDates || []).includes(d) : !!i.done;
@@ -283,37 +302,83 @@ function lastActive(cardId) { const s = [...cardDaySet(cardId)].sort(); return s
 function itemSub(i, withCard = true) {
   const p = [];
   if (withCard && i.card && cardById(i.card)) p.push(cardById(i.card).name);
-  if (i.repeat) p.push(i.repeat === 'weekdays' ? t('weekdays') : i.repeat === 'weekly' ? t('everyWeek') : t('everyDay'));
+  if (i.repeat) p.push(repText(i));
   return p.join(' · ');
 }
 function whenLabel(i) {
-  if (i.repeat) return (i.time ? i.time + ' · ' : '') + (i.repeat === 'weekdays' ? t('weekdays') : i.repeat === 'weekly' ? t('everyWeek') : t('everyDay'));
+  if (i.repeat) return (i.time ? i.time + ' · ' : '') + repText(i);
   if (!i.date) return '';
   return dayName(i.date) + (i.time ? ' ' + i.time : '');
 }
 
+function daysText(ds) {
+  const a = [...new Set(ds || [])].sort((x, y) => x - y);
+  if (a.length === 7) return t('everyDay');
+  if (a.join() === '0,1,2,3,4') return t('weekdays');
+  if (a.join() === '5,6') return lang() === 'cs' ? 'víkendy' : 'weekends';
+  return a.map(k => WD[lang()][k]).join(' · ');
+}
+function repText(i) {
+  if (!i || !i.repeat) return '';
+  if (i.repeat === 'weekdays') return t('weekdays');
+  if (i.repeat === 'weekly') return t('everyWeek');
+  if (i.repeat === 'days') return daysText(i.days);
+  return t('everyDay');
+}
+function perWeek(i) { if (!i || !i.repeat) return 0; if (i.repeat === 'daily') return 7; if (i.repeat === 'weekdays') return 5; if (i.repeat === 'weekly') return 1; if (i.repeat === 'days') return (i.days || []).length || 1; return 7; }
+/* weekly goal of a habit card: explicit, else from its repeating items, else 7 */
+function goalOf(c) { if (!c) return 7; if (c.goal) return clamp(c.goal, 1, 7); const r = cardItems(c.id).filter(i => i.repeat); return r.length ? clamp(Math.max(...r.map(perWeek)), 1, 7) : 7; }
+function goalText(n) { if (n >= 7) return lang() === 'cs' ? 'každý den' : 'every day'; return lang() === 'cs' ? n + '× týdně' : n + '× a week'; }
+const deacc = s => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+
 /* ---------- natural language when ---------- */
 const NL = (() => {
   const B = '(?<![\\p{L}\\d])', E = '(?![\\p{L}\\d])';
+  const DT = [
+    ['pondělí|pondeli|pondělky|pondelky|monday|mondays|mon|po', 0], ['úterý|utery|úterky|uterky|tuesday|tuesdays|tues|tue|út|ut', 1],
+    ['středa|středu|streda|stredu|středy|stredy|wednesday|wednesdays|wed|st', 2], ['čtvrtek|ctvrtek|čtvrtky|ctvrtky|thursday|thursdays|thurs|thu|čt|ct', 3],
+    ['pátek|patek|pátky|patky|friday|fridays|fri|pá|pa', 4], ['sobota|sobotu|soboty|saturday|saturdays|sat|so', 5], ['neděle|neděli|nedele|nedeli|sunday|sundays|sun|ne', 6]];
+  const TOKRE = DT.map(x => x[0]).join('|');
+  const TK = '(?:' + TOKRE + ')(?![\\p{L}\\d])';
+  const DTOKG = new RegExp(B + TK, 'giu');
+  const SEP = '(?:\\s*,\\s*|\\s+a\\s+|\\s+and\\s+|\\s*&\\s*|\\s*\\+\\s*|\\s*\\/\\s*|\\s+)';
+  const EVERY = '(?:každ(?:ou|ý|é|á)|kazd(?:ou|y|e|a)|every|ve|v|on)\\s+';
+  const DSEQ = '(?:' + EVERY + ')?' + TK + '(?:' + SEP + TK + ')+';
+  const DONE = '(?:každ(?:ou|ý|é|á)|kazd(?:ou|y|e|a)|every)\\s+' + TK;
+  const DMAP = {}; DT.forEach(([re, k]) => re.split('|').forEach(w => { DMAP[deacc(w)] = k; }));
+  const dayIdx = w => { const k = DMAP[deacc(w)]; return k == null ? null : k; };
   const days = [
     ['pondělí|pondeli|monday', 0], ['úterý|utery|tuesday', 1], ['středa|středu|streda|stredu|wednesday', 2], ['čtvrtek|ctvrtek|thursday', 3],
     ['pátek|patek|friday', 4], ['sobota|sobotu|saturday', 5], ['neděle|neděli|nedele|nedeli|sunday', 6]];
   return function parse(text) {
-    const out = { date: null, time: null, repeat: null, spans: [] };
+    const out = { date: null, time: null, repeat: null, days: null, card: null, spans: [] };
     if (!text) return out;
     const take = (re, fn) => { const m = new RegExp(B + '(?:' + re + ')' + E, 'iu').exec(text); if (m) { const r = fn(m); if (r !== false) out.spans.push([m.index, m.index + m[0].length]); } return m; };
     take('každý den|kazdy den|denně|denne|every day|daily', () => { out.repeat = 'daily'; });
     if (!out.repeat) take('všední dny|vsedni dny|ve všední dny|weekdays|every weekday', () => { out.repeat = 'weekdays'; });
     if (!out.repeat) take('každý týden|kazdy tyden|every week|weekly', () => { out.repeat = 'weekly'; });
+    if (!out.repeat) take('o víkendech|o vikendech|víkendy|vikendy|každý víkend|kazdy vikend|on weekends|weekends|every weekend', () => { out.repeat = 'days'; out.days = [5, 6]; });
+    if (!out.repeat) take(DSEQ, m => { const ds = [...new Set([...m[0].matchAll(DTOKG)].map(x => dayIdx(x[0])).filter(x => x != null))]; if (ds.length < 2) return false; out.repeat = 'days'; out.days = ds.sort((a, b) => a - b); });
+    if (!out.repeat) take(DONE, m => { const x = [...m[0].matchAll(DTOKG)].map(y => dayIdx(y[0])).filter(y => y != null); if (!x.length) return false; out.repeat = 'days'; out.days = [x[x.length - 1]]; });
+    if (out.repeat === 'days' && out.days) { if (out.days.length === 7) { out.repeat = 'daily'; out.days = null; } }
+    take('#([\\p{L}\\d_\\-]+)', m => { const tag = deacc(m[1]); const c = (typeof S !== 'undefined' && S ? S.cards : []).find(c => deacc(c.name).replace(/\s+/g, '').startsWith(tag) || deacc(c.name).split(/\s+/).some(w => w.startsWith(tag))); if (!c) return false; out.card = c.id; });
     take('pozítří|pozitri|day after tomorrow', () => { out.date = addD(T(), 2); }) ||
     take('zítra|zitra|tomorrow|tmrw', () => { out.date = addD(T(), 1); }) ||
     take('dnes|dneska|today|tonight|večer|vecer', m => { out.date = T(); if (/večer|vecer|tonight/i.test(m[0]) && !out.time) out.time = '19:00'; });
-    if (!out.date) {
+    if (!out.date && out.repeat !== 'days') {
       for (const [re, k] of days) {
         const m = take('(?:v |ve |on |next |příští |pristi )?(?:' + re + ')', () => {
           let d = T(); let n = (k - dow(d) + 7) % 7; if (n === 0) n = 7; out.date = addD(d, n);
         });
         if (m) break;
+      }
+      if (!out.date) {
+        // short day names only when they clearly mean a day: "v pá", "pá 14:00", "st v 18"
+        const AB = 'po|út|ut|st|čt|ct|pá|pa|so|ne|mon|tue|wed|thu|fri|sat|sun';
+        take('(?:(?:v|ve|na|on|this|next|příští|pristi)\\s+(?:' + AB + ')(?![\\p{L}\\d])|(?:' + AB + ')(?=\\s+(?:v\\s*|ve\\s*|at\\s*|o\\s*|@\\s*)?\\d{1,2}(?:[:.]\\d{2})?(?![\\p{L}\\d])))', m => {
+          const w = m[0].trim().split(/\s+/).pop(); const k = dayIdx(w); if (k == null) return false;
+          let n = (k - dow(T()) + 7) % 7; if (n === 0) n = 7; out.date = addD(T(), n);
+        });
       }
     }
     take('(?:v|ve|at|o|@)\\s*(\\d{1,2})(?:[:.](\\d{2}))?\\s*(am|pm|h|hod)?', m => {

@@ -510,3 +510,102 @@ body.viewing #toast{top:calc(var(--st) + 64px);bottom:auto}
 @keyframes hintIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
 @keyframes hintP{50%{opacity:.7}}
 @media (prefers-reduced-motion:reduce){#vlayer .splash img,#vlayer .splash .hint{animation:none}}
+
+/* ===== v15: add sheet — tiles + list ===== */
+#sheet{transition:transform .42s var(--out),bottom .26s var(--out)}
+#sheet.drag{transition:none}
+#sheet .sh .tl .mseg{display:inline-flex;height:38px;margin:0 auto}
+#sheet .sh .tl .mseg button{height:32px;padding:0 15px;font-size:14px;line-height:32px}
+#sheet .sh .l,#sheet .sh .rt{min-width:64px}
+.xbtn{width:36px;height:36px;border-radius:18px;display:flex;align-items:center;justify-content:center;color:var(--ink);position:relative}
+.xbtn::after{content:"";position:absolute;inset:-4px}
+#sheet .chip{height:40px;border-radius:20px;padding:0 15px}
+#sheet .fld.big{padding:14px 44px 14px 16px}
+.addsheet .big textarea{min-height:34px}
+.addsheet .big .mirror{inset:14px 44px 14px 16px}
+.ideaf textarea{font:500 19px/1.4 Inter!important;min-height:96px}
+.clr{position:absolute;right:10px;top:12px;width:26px;height:26px;border-radius:13px;background:rgba(243,234,216,.22);color:var(--navy);display:flex;align-items:center;justify-content:center}
+.clr::after{content:"";position:absolute;inset:-9px}
+.clr svg{stroke:#0d1726}
+.atiles{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.atile{border-radius:22px;padding:12px 14px 11px;display:flex;flex-direction:column;align-items:flex-start;gap:0;text-align:left;min-height:92px;min-width:0}
+.atile .cap{font-size:10.5px}
+.atile.cr .cap,.atile.cr small{color:rgba(19,35,58,.62)}
+.atile .v{display:flex;align-items:center;gap:8px;margin-top:10px;font:800 23px/1.05 'Bricolage Grotesque';letter-spacing:-.015em;min-width:0;max-width:100%}
+.atile .v>span:last-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.atile .v .dot{width:10px;height:10px;border-radius:5px;flex:none}
+.atile small{margin-top:6px;font:400 12.5px/1.2 Inter;color:var(--ink3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.atray{border-radius:22px;padding:12px;margin-top:8px;animation:trayIn .28s var(--out)}
+@keyframes trayIn{from{opacity:0;transform:translateY(-6px)}}
+.d7{display:flex;gap:5px}
+.dpl{flex:1;min-width:0;height:60px;border-radius:18px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;font:500 11px/1 Inter;color:var(--ink3)}
+.dpl b{font:700 17px/1 'Bricolage Grotesque';color:var(--ink)}
+.dpl.cr{color:rgba(19,35,58,.65)}.dpl.cr b{color:var(--navy)}
+.seg4{display:grid;grid-template-columns:repeat(4,1fr);height:44px;border-radius:22px;padding:3px}
+.seg4 button{height:38px;padding:0 4px;font-size:13.5px;border-radius:19px}
+.wdsel{display:flex;justify-content:space-between;margin-top:12px;padding:0 1px}
+.wdsel button{width:42px;height:42px;border-radius:21px;display:flex;align-items:center;justify-content:center;font:600 14.5px/1 Inter;color:var(--ink)}
+.wdsel button.cr{color:var(--navy)}
+.amh{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.amh b{font:700 16px/1 Inter}
+.amh .cb{width:38px;height:38px}
+.amg{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;text-align:center}
+.amg .wl{font:600 10.5px/1 Inter;color:var(--ink3);padding:4px 0 6px}
+.amg button{height:40px;border-radius:20px;font:500 14.5px/1 Inter;color:var(--ink)}
+.amg button.past{color:rgba(243,234,216,.35)}
+.amg button.td{box-shadow:inset 0 0 0 1.5px rgba(243,234,216,.5)}
+.amg button.cr{color:var(--navy)}
+.alist{border-radius:22px;margin-top:10px;overflow:hidden}
+.lrw{display:flex;align-items:center;gap:12px;width:100%;min-height:52px;padding:0 16px;font:500 15.5px/1 Inter;text-align:left;border-top:1px solid rgba(255,255,255,.07)}
+.alist>.lrw:first-child{border-top:0}
+.lrw .li{flex:none;width:30px;height:30px;border-radius:15px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.08)}
+.lrw .ll{flex:1;min-width:0}
+.lrw .lv{display:flex;align-items:center;gap:7px;color:var(--ink2);font:400 15px/1 Inter;white-space:nowrap}
+.lrw .lv b{color:var(--ink);font-weight:600}
+.lrw[aria-expanded="true"]{background:rgba(255,255,255,.04)}
+.lexp{padding:2px 14px 14px;background:rgba(255,255,255,.04)}
+.asub{font:400 12.5px/1.4 Inter;margin:10px 2px 0}
+.mediaprev{position:relative}
+.mediaprev .mrm{position:absolute;right:10px;top:10px}
+#sheet .hint{margin-top:14px}
+
+/* card goal + inline add */
+.goalb{font:inherit;letter-spacing:inherit;text-transform:inherit;color:var(--ink2);text-decoration:underline;text-decoration-color:rgba(243,234,216,.3);text-underline-offset:3px;padding:6px 0;margin:-6px 0}
+.addline{position:relative}
+.addline .addgo{flex:none;width:32px;height:32px;border-radius:16px;display:flex;align-items:center;justify-content:center}
+.addhint{display:flex;gap:6px;flex-wrap:wrap;padding:0 0 12px 36px;font:400 12.5px/1.3 Inter}
+.addhint .chip{height:30px;padding:0 11px;font-size:13px;gap:6px}
+
+/* board: planned badge */
+.mt .plb{position:absolute;left:8px;top:8px;height:24px;padding:0 9px;border-radius:12px;display:flex;align-items:center;gap:5px;font:600 11px/1 Inter}
+.mt.note .plt{display:inline-flex;align-items:center;gap:3px;color:var(--ink)}
+
+/* viewer: 5 actions, first is "Plan it" */
+#viewer .vact{grid-template-columns:1.5fr repeat(4,1fr);gap:7px}
+#viewer .vact button{font-size:11px;padding:0 4px;min-width:0}
+#viewer .vact button.vplan{color:var(--navy);font-weight:600;font-size:12px}
+#viewer .vact button:not(.vplan){white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* notifications page */
+.nstat{border-radius:28px;padding:16px;display:flex;align-items:center;gap:14px}
+.nstat .ni{flex:none;width:46px;height:46px;border-radius:23px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.08)}
+.nstat.on .ni{background:rgba(63,191,127,.2);color:#8fe6bb}
+.nstat .tx{flex:1;display:flex;flex-direction:column;gap:5px;min-width:0}
+.nstat .tx b{font:600 17px/1.1 Inter}
+.nstat .tx small{font:400 13px/1.4 Inter;color:var(--ink2)}
+.nstat .tg{cursor:pointer}
+.steps .st{display:flex;gap:12px;align-items:flex-start;padding:9px 0;font:400 14px/1.45 Inter;color:var(--ink2);border-top:1px solid rgba(255,255,255,.06)}
+.steps .st:first-child{border-top:0;padding-top:0}
+.steps .st b{color:var(--ink);font-weight:600}
+.steps .st .n{flex:none;width:24px;height:24px;border-radius:12px;background:var(--cream);color:var(--navy);font:700 12.5px/24px Inter;text-align:center}
+
+/* keyboard open: screens can scroll above it, floating bits get out of the way */
+body.kbopen .scr{padding-bottom:calc(var(--kb) + 40px)}
+body.kbopen .nav{opacity:0;pointer-events:none}
+body.kbopen #app::after{opacity:0}
+body.kbopen #toast{bottom:calc(var(--kb) + 12px)}
+body.sheeting .nav{opacity:0;pointer-events:none;transform:translateY(30px)}
+body.sheeting #toast{bottom:auto;top:calc(var(--st) + 8px);transform:translate(-50%,-20px)}
+body.sheeting #toast.on{transform:translate(-50%,0)}
+
+#sheet .sb{min-height:0}
