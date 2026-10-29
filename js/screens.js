@@ -303,7 +303,7 @@ function renderBoard() {
   auraFromCards(V.boardFilter !== 'all' && V.boardFilter !== 'none' ? cardColor(V.boardFilter) : null);
 }
 ACT.boardFilter = el => { V.boardFilter = el.dataset.k; renderBoard(); };
-ACT.boardSearch = () => { V.boardSearch = !V.boardSearch; if (!V.boardSearch) V.boardQ = ''; renderBoard(); if (V.boardSearch) setTimeout(() => { const q = $('#boardQ'); q && q.focus(); }, 50); };
+ACT.boardSearch = () => { V.boardSearch = !V.boardSearch; if (!V.boardSearch) V.boardQ = ''; renderBoard(); if (V.boardSearch) { const q = $('#boardQ'); q && q.focus(); } };
 
 /* ---------------- PLAN ---------------- */
 function dayDots(d) { const cs = [...new Set(itemsOn(d).map(i => cardColor(i.card)))].slice(0, 3); return cs.map(c => '<i style="--c:' + c + '"></i>').join(''); }

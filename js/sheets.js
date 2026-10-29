@@ -211,7 +211,7 @@ function mountAdd(pickPhoto) {
     });
     ta.addEventListener('focus', () => { if (A.tile || A.row) { A.tile = null; A.row = null; A.mon = null; updAdd(); } });
     fit(); paintMirror();
-    if (!A.editId && !pickPhoto && !A.text) setTimeout(() => { try { if (SH.open && document.activeElement !== ta) ta.focus({ preventScroll: true }); } catch (_) {} }, 360);
+    if (!A.editId && !pickPhoto && !A.text) autoFocus(ta);
   }
   bindAddDyn();
   if (pickPhoto) { const f = $('#aFile'); if (f) try { f.click(); } catch (e) {} }
@@ -226,7 +226,7 @@ function bindAddDyn() {
   });
 }
 const blurField = () => { const a = document.activeElement; if (a && (a.tagName === 'TEXTAREA' || a.tagName === 'INPUT')) a.blur(); };
-ACT.aMode = el => { if (A.mode === el.dataset.k) return; A.mode = el.dataset.k; A.tile = null; A.row = null; if (A.mode === 'plan') { applyParse(); } $$('#sheet .mseg button').forEach(b => b.classList.toggle('on', b.dataset.k === A.mode)); refreshAdd(); const sv = $('#sheetSave'); if (sv) { sv.textContent = saveLabel(); sv.disabled = !canSave(); } setTimeout(() => { const ta = $('#aText'); ta && ta.focus({ preventScroll: true }); }, 60); };
+ACT.aMode = el => { if (A.mode === el.dataset.k) return; A.mode = el.dataset.k; A.tile = null; A.row = null; if (A.mode === 'plan') { applyParse(); } $$('#sheet .mseg button').forEach(b => b.classList.toggle('on', b.dataset.k === A.mode)); refreshAdd(); const sv = $('#sheetSave'); if (sv) { sv.textContent = saveLabel(); sv.disabled = !canSave(); } autoFocus($('#aText'), 60); };
 ACT.aTile = el => { const k = el.dataset.k; blurField(); A.row = null; A.tile = A.tile === k ? null : k; A.mon = null; updAdd(); };
 ACT.aRow = el => { const k = el.dataset.k; blurField(); A.tile = null; A.row = A.row === k ? null : k; updAdd(); };
 ACT.aClear = () => { A.text = ''; A.spans = []; const ta = $('#aText'); if (ta) { ta.value = ''; ta.dispatchEvent(new Event('input')); ta.focus({ preventScroll: true }); } };
@@ -341,7 +341,7 @@ function cardBody() {
 function mountCardSheet() {
   const n = $('#kName'); n.addEventListener('input', () => { K.name = n.value; $('#sheetSave').disabled = !K.name.trim(); });
   n.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); n.blur(); } });
-  if (!K.id && !K.name) setTimeout(() => { try { n.focus({ preventScroll: true }); } catch (_) {} }, 380);
+  if (!K.id && !K.name) autoFocus(n, 380);
   const a = $('#kAct'); a && a.addEventListener('input', () => { K.habitAct = a.value; });
   const dl = $('#kDl'); dl && dl.addEventListener('change', () => { if (dl.value) { K.deadline = dl.value; refreshK(); } });
   const no = $('#kNote'); no.addEventListener('input', () => { K.note = no.value; });
@@ -372,7 +372,7 @@ ACT.editCard = () => openCardSheet(V.card);
 /* ---------------- small sheets ---------------- */
 ACT.editName = () => {
   let v = S.name || '';
-  openSheet({ title: t('yourName'), right: t('save'), body: '<div class="fld in"><input id="nmIn" value="' + esc(v) + '" placeholder="' + esc(t('namePh')) + '" autocomplete="given-name" enterkeyhint="done"></div>', mount: () => { const i = $('#nmIn'); i.addEventListener('input', () => v = i.value); i.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); $('#sheetSave').click(); } }); setTimeout(() => i.focus(), 380); }, onSave: () => { S.name = v.trim(); save(); closeSheet(true); renderSettings(); } });
+  openSheet({ title: t('yourName'), right: t('save'), body: '<div class="fld in"><input id="nmIn" value="' + esc(v) + '" placeholder="' + esc(t('namePh')) + '" autocomplete="given-name" enterkeyhint="done"></div>', mount: () => { const i = $('#nmIn'); i.addEventListener('input', () => v = i.value); i.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); $('#sheetSave').click(); } }); autoFocus(i, 380); }, onSave: () => { S.name = v.trim(); save(); closeSheet(true); renderSettings(); } });
 };
 ACT.pickLang = () => {
   openSheet({ title: t('language'), leftLabel: t('close'), body: '<section class="grp frost solid">' + ['en', 'cs'].map(k => '<button class="srow" data-a="setLang" data-k="' + k + '">' + esc(t('lang_' + k)) + (S.lang === k ? '<span class="r" style="color:var(--green)">' + ico('check', 18, 2.6) + '</span>' : '') + '</button>').join('') + '</section>' });
@@ -432,7 +432,7 @@ ACT.vCard = () => {
 ACT.vSetCard = el => { const m = curM(); m.card = el.dataset.k || null; save(); closeSheet(true); paintViewer(); toast(esc(m.card ? cardById(m.card).name : t('noCard'))); };
 ACT.vEdit = () => {
   const m = curM(); let v = m.note || '';
-  openSheet({ title: m.kind === 'note' ? t('note') : t('captionPh'), right: t('save'), body: '<div class="fld in big"><textarea id="vNoteIn" rows="3" style="min-height:90px">' + esc(v) + '</textarea></div>', mount: () => { const i = $('#vNoteIn'); i.addEventListener('input', () => { v = i.value; $('#sheetSave').disabled = m.kind === 'note' && !v.trim(); }); setTimeout(() => i.focus(), 380); }, onSave: () => { m.note = v.trim(); save(); closeSheet(true); paintViewer(); } });
+  openSheet({ title: m.kind === 'note' ? t('note') : t('captionPh'), right: t('save'), body: '<div class="fld in big"><textarea id="vNoteIn" rows="3" style="min-height:90px">' + esc(v) + '</textarea></div>', mount: () => { const i = $('#vNoteIn'); i.addEventListener('input', () => { v = i.value; $('#sheetSave').disabled = m.kind === 'note' && !v.trim(); }); autoFocus(i, 380); }, onSave: () => { m.note = v.trim(); save(); closeSheet(true); paintViewer(); } });
 };
 /* delete with undo instead of a confirm dialog (media is removed only once the undo window has passed) */
 ACT.vDelete = () => {
@@ -450,7 +450,7 @@ ACT.vPlan = () => {
   const text = (m.note || '').split('\n')[0].slice(0, 120);
   closeViewer();
   openAdd({ mode: 'plan', text, card: m.card || null, fromMoment: m.id });
-  if (!text) setTimeout(() => { const ta = $('#aText'); ta && ta.focus(); }, 380);
+  if (!text) autoFocus($('#aText'), 380);
 };
 (function viewerGestures() {
   const v = $('#viewer'); let s = null, lastTap = 0;

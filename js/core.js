@@ -1,6 +1,7 @@
 'use strict';
 /* ============ CORE: utils, i18n, storage, model ============ */
-const VERSION = '15';
+const VERSION = '15.1';
+const PUSH_DEFAULT = 'https://calm-brook-f448.keidaurora.workers.dev'; // author's notification server, shared by testers
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -168,14 +169,15 @@ async function loadState() {
 }
 function blankState() {
   const cs = (navigator.language || '').toLowerCase().startsWith('cs') || (navigator.language || '').toLowerCase().startsWith('sk');
-  return { v: 1, name: '', lang: cs ? 'cs' : 'en', nudges: true, weekly: true, wall: 'aurora', wallKey: null, surface: 'glass', aura: true, dim: 22, cards: [], items: [], moments: [], onboarded: false, lastCard: null, created: T(), push: { on: false, url: '', key: '', id: null, secret: null, def: 10, asked: false } };
+  return { v: 1, name: '', lang: cs ? 'cs' : 'en', nudges: true, weekly: true, wall: 'aurora', wallKey: null, surface: 'glass', aura: true, dim: 22, cards: [], items: [], moments: [], onboarded: false, lastCard: null, created: T(), push: { on: false, url: PUSH_DEFAULT, key: '', id: null, secret: null, def: 10, asked: false } };
 }
 function migrate(s) {
   const b = blankState();
   const o = Object.assign(b, s || {});
   o.cards = (o.cards || []).filter(Boolean); o.items = (o.items || []).filter(Boolean); o.moments = (o.moments || []).filter(Boolean);
   o.items.forEach(i => { if (i.repeat && !Array.isArray(i.doneDates)) i.doneDates = []; if (i.repeat === 'days' && !Array.isArray(i.days)) i.days = [dow(i.date || T())]; if (i.time && i.remind === undefined) i.remind = 10; });
-  o.push = Object.assign({ on: false, url: '', key: '', id: null, secret: null, def: 10, asked: false }, o.push || {});
+  o.push = Object.assign({ on: false, url: PUSH_DEFAULT, key: '', id: null, secret: null, def: 10, asked: false }, o.push || {});
+  if (!o.push.url) o.push.url = PUSH_DEFAULT;
   return o;
 }
 

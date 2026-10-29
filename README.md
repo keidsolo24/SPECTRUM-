@@ -1,4 +1,4 @@
-# Aurora Glass v15 · testovací verze
+# Aurora Glass v15.1 · testovací verze
 
 Aurora jako PWA pro iPhone. Funguje offline a data zůstávají v telefonu. Notifikace jdou přes tvůj vlastní malý server na Cloudflare.
 

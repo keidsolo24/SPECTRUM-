@@ -113,7 +113,7 @@ async function handle(req, env) {
     if (old && old.secret !== b.secret) return json(h, { error: 'forbidden' }, 403);
     const d = { secret: b.secret, sub: b.sub, rem: old ? old.rem : [], sent: old ? old.sent : [], lang: b.lang || 'cs', upd: Date.now() };
     await env.AURORA.put(devKey(b.id), JSON.stringify(d));
-    const devs = await getDevs(env); if (!devs.includes(b.id)) { devs.push(b.id); await env.AURORA.put('devs', JSON.stringify(devs.slice(-20))); }
+    const devs = await getDevs(env); if (!devs.includes(b.id)) { devs.push(b.id); await env.AURORA.put('devs', JSON.stringify(devs.slice(-60))); }
     return json(h, { ok: true });
   }
   const d = await auth(env, b.id, b.secret);

@@ -165,7 +165,11 @@ $('#scrim').addEventListener('click', () => closeSheet());
    iOS: the sheet sits right on top of the keyboard. We move it up as soon as a field
    gets focus (with the last known keyboard height), so iOS never needs to pan the page,
    then correct it from visualViewport. The page itself never scrolls. */
-const KB = { h: 0, last: 0, open: false };
+const KB = { h: 0, last: 0, open: false, touchT: 0 };
+const IOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+/* iPhone opens the keyboard only for a real tap, so a delayed focus() would just leave a caret
+   without keyboard and make the layout jump. On iPhone we wait for the user's tap. */
+function autoFocus(el, ms = 360) { if (!el || IOS) return; setTimeout(() => { try { if (document.contains(el) && document.activeElement !== el) el.focus({ preventScroll: true }); } catch (_) {} }, ms); }
 (function vv() {
   const v = window.visualViewport; const root = document.documentElement.style;
   try { KB.last = +localStorage.getItem('aurora-kb') || 0; } catch (e) {}
@@ -181,9 +185,11 @@ const KB = { h: 0, last: 0, open: false };
     if (!v) return;
     if (window.scrollY || document.documentElement.scrollTop) window.scrollTo(0, 0);
     root.setProperty('--vvh', v.height + 'px');
-    let kb = window.innerHeight - v.height - v.offsetTop;
+    // distance from the bottom of the (fixed, full-height) body to the bottom of what is visible
+    const bodyH = document.body.getBoundingClientRect().height || window.innerHeight;
+    let kb = bodyH - (v.offsetTop + v.height);
     if (kb < 80) kb = 0;
-    else { kb += Math.max(0, document.body.clientHeight - window.innerHeight); KB.last = kb; try { localStorage.setItem('aurora-kb', String(Math.round(kb))); } catch (e) {} }
+    else { KB.last = kb; try { localStorage.setItem('aurora-kb', String(Math.round(kb))); } catch (e) {} }
     if (!kb && isField(document.activeElement) && KB.h && Date.now() - KB.focusT < 700) return; // keyboard still animating in
     apply(kb);
   };
@@ -192,9 +198,11 @@ const KB = { h: 0, last: 0, open: false };
   document.addEventListener('focusin', e => {
     if (!isField(e.target)) return;
     KB.focusT = Date.now();
-    if (e.target.closest('#sheet') && KB.last && !KB.open && /iP(hone|ad|od)/.test(navigator.userAgent)) apply(KB.last);
+    // lift the sheet early only when the user really tapped the field (then the keyboard surely comes)
+    if (e.target.closest('#sheet') && KB.last && !KB.open && IOS && Date.now() - KB.touchT < 700) apply(KB.last);
     follow(900);
   });
+  document.addEventListener('touchstart', e => { if (isField(e.target) || (e.target.closest && e.target.closest('.fld'))) KB.touchT = Date.now(); }, { passive: true, capture: true });
   document.addEventListener('focusout', () => { setTimeout(() => { if (!isField(document.activeElement)) { apply(0); window.scrollTo(0, 0); follow(600); } }, 60); });
   if (v) { v.addEventListener('resize', () => follow(300)); v.addEventListener('scroll', () => follow(300)); }
   window.addEventListener('orientationchange', () => follow(800));

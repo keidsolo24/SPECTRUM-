@@ -609,3 +609,8 @@ body.sheeting #toast{bottom:auto;top:calc(var(--st) + 8px);transform:translate(-
 body.sheeting #toast.on{transform:translate(-50%,0)}
 
 #sheet .sb{min-height:0}
+
+.adv summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:8px;margin:0 4px;padding:6px 0}
+.adv summary::-webkit-details-marker{display:none}
+.adv summary::after{content:"›";font:600 16px/1 Inter;transform:rotate(90deg);transition:transform .2s}
+.adv:not([open]) summary::after{transform:none}
