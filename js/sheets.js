@@ -96,20 +96,50 @@ function planDyn() {
     + tileB('card', t('cardCap'), c ? esc(c.name) : esc(t('noCard')), c ? (c.type === 'habit' ? t('countsStreak') : t('projectT')) : t('optional'), c ? c.color : null)
     + tileB('rep', t('repeat'), rv, rs) + '</div>';
   if (A.tile) h += '<div class="atray in">' + trayHTML() + '</div>';
-  if (A.time) {
-    h += '<div class="alist in">'
+  const pr = partnerRow();
+  if (A.time || pr) {
+    h += '<div class="alist in">' + (A.time ? ''
       + listRow('dur', 'dur', t('length'), durLabel(A.dur || 45), () => '<div class="chips wrap">' + [15, 30, 45, 60, 90, 120].map(m => '<button class="chip ' + ((A.dur || 45) === m ? 'cr' : 'in') + ' press" data-a="aDur" data-k="' + m + '">' + durLabel(m) + '</button>').join('') + '</div>')
-      + listRow('rem', 'bell', t('remind'), remLabel(A.remind), () => '<div class="chips wrap">' + REM_OPTS.map(([k, l]) => '<button class="chip ' + (A.remind === k ? 'cr' : 'in') + ' press" data-a="aRem" data-k="' + k + '">' + esc(t(l)) + '</button>').join('') + '</div>' + (!S.push.on ? '<div class="muted asub">' + esc(lang() === 'cs' ? 'Notifikace zapneš v Nastavení → Notifikace.' : 'Turn on notifications in Settings → Notifications.') + '</div>' : ''))
-      + '</div>';
+      + listRow('rem', 'bell', t('remind'), remLabel(A.remind), () => '<div class="chips wrap">' + REM_OPTS.map(([k, l]) => '<button class="chip ' + (A.remind === k ? 'cr' : 'in') + ' press" data-a="aRem" data-k="' + k + '">' + esc(t(l)) + '</button>').join('') + '</div>' + (!S.push.on ? '<div class="muted asub">' + esc(lang() === 'cs' ? 'Notifikace zapneš v Nastavení → Notifikace.' : 'Turn on notifications in Settings → Notifications.') + '</div>' : '')) : '')
+      + pr + '</div>';
   }
-  h += '<div class="hint"><span class="led" style="--c:' + cardColor(A.card) + '"></span><span id="aHint">' + landsText() + '</span></div>';
+  h += '<div class="hint"><span class="led" style="--c:' + cardColor(A.card) + '"></span><span id="aHint">' + landsText() + shareHint() + '</span></div>';
   if (A.editId) {
     const i = itemById(A.editId); const d = i.repeat ? T() : (i.date || T()); const on = isDone(i, d);
+    const ch = typeof chOfItem === 'function' ? chOfItem(i) : null;
+    if (ch && members(ch).length > 1) {
+      const cs = lang() === 'cs';
+      h += '<span class="cap lab">' + esc(cs ? 'Kdo má hotovo' : 'Who is done') + '</span><section class="grp frost solid">' + members(ch).map(m => '<div class="srow">' + avHTML(m, 28) + '<span class="tx">' + esc(m.me ? (cs ? 'Ty' : 'You') : m.name) + '</span><span class="r"' + (doneBy(i, d, m.id) ? ' style="color:var(--green)">' + ico('check', 15, 2.6) + esc(cs ? 'hotovo' : 'done') : '>' + esc(cs ? 'zatím ne' : 'not yet')) + '</span></div>').join('') + '</section>';
+    }
+    if (ch && ch.kind === 'item') h += '<div class="btnrow" style="margin-top:14px"><button class="pbtn ghost press" data-a="spLeaveItem">' + ico('leave', 17, 2) + esc(lang() === 'cs' ? 'Odebrat mě z toho' : 'Leave this') + '</button></div>';
     h += '<div class="btnrow"><button class="pbtn ' + (on ? 'ghost' : 'cr') + ' press" data-a="eDone">' + ico(on ? 'repeat' : 'check', 18, 2.4) + esc(on ? t('markUndone') : t('markDone')) + '</button></div>'
       + '<div class="btnrow" style="margin-top:8px"><button class="pbtn danger press" data-a="eDelete">' + ico('trash', 18, 2) + esc(t('deleteItem')) + '</button></div>';
   }
   return h;
 }
+/* "Chceš přidat parťáka?" — share one plan item with someone (or it comes from a shared card) */
+function partnerRow() {
+  if (A.mode !== 'plan' || typeof partners !== 'function') return '';
+  const cs = lang() === 'cs'; const c = cardById(A.card);
+  const stat = (label, val) => '<div class="lrw static"><span class="li">' + ico('users', 15, 2) + '</span><span class="ll">' + esc(label) + '</span><span class="lv"><b>' + esc(val) + '</b></span></div>';
+  if (c && c.sh) { const o = others(chOfCard(c) || {}); return stat(cs ? 'Parťák' : 'Partner', o.length ? namesOf(o) + (cs ? ' · z karty' : ' · from card') : (cs ? 'karta Spolu' : 'shared card')); }
+  if (A.editId) { const it = itemById(A.editId); const ch = it && it.ish ? chBySp(it.ish) : null; if (ch) { const o = others(ch); return stat(cs ? 'Parťák' : 'Partner', o.length ? namesOf(o) : (cs ? 'čeká na pozvánku' : 'waiting for invite')); } }
+  const ps = partners();
+  const sel = A.partner === 'invite' ? (cs ? 'Pozvat nového' : 'Invite new') : A.partner ? ((ps.find(p => p.id === A.partner) || {}).name || '') : (cs ? 'Nikdo' : 'Nobody');
+  return listRow('partner', 'users', A.partner ? (cs ? 'Parťák' : 'Partner') : (cs ? 'Chceš přidat parťáka?' : 'Add a partner?'), sel, () => '<div class="chips wrap"><button class="chip ' + (!A.partner ? 'cr' : 'in') + ' press" data-a="aPartner" data-k="">' + esc(cs ? 'Nikdo' : 'Nobody') + '</button>'
+    + ps.map(p => '<button class="chip ' + (A.partner === p.id ? 'cr' : 'in') + ' press" data-a="aPartner" data-k="' + p.id + '">' + avHTML(p, 20) + esc(p.name) + '</button>').join('')
+    + '<button class="chip ' + (A.partner === 'invite' ? 'cr' : 'in') + ' press" data-a="aPartner" data-k="invite">' + ico('plus', 14, 2.4) + esc(cs ? 'Pozvat' : 'Invite') + '</button></div><div class="muted asub">' + esc(cs ? 'Sdílí se jen tahle jedna věc. Nic jiného.' : 'Only this one item is shared. Nothing else.') + '</div>');
+}
+function shareHint() {
+  if (A.mode !== 'plan' || typeof partners !== 'function') return '';
+  const cs = lang() === 'cs'; const c = cardById(A.card); let o = [];
+  if (c && c.sh) o = others(chOfCard(c) || {});
+  else if (A.partner && A.partner !== 'invite') o = partners().filter(p => p.id === A.partner);
+  else if (A.editId) { const it = itemById(A.editId); const ch = it && it.ish ? chBySp(it.ish) : null; if (ch) o = others(ch); }
+  if (A.partner === 'invite') return ' ' + esc(cs ? 'Po uložení dostaneš odkaz pro parťáka.' : 'You get a link after saving.');
+  return o.length ? ' ' + esc(cs ? 'Uvidí to i ' + namesOf(o) + '.' : namesOf(o) + ' will see it too.') : '';
+}
+ACT.aPartner = el => { A.partner = el.dataset.k || null; A.row = null; updAdd(); };
 function listRow(k, icn, label, val, body) {
   const on = A.row === k;
   return '<button class="lrw press" data-a="aRow" data-k="' + k + '" aria-expanded="' + on + '"><span class="li">' + ico(icn, 15, 2) + '</span><span class="ll">' + esc(label) + '</span><span class="lv"><b>' + esc(val) + '</b>' + ico(on ? 'chevD' : 'chev', 13, 2.4) + '</span></button>' + (on ? '<div class="lexp">' + body() + '</div>' : '');
@@ -259,13 +289,26 @@ async function saveAdd(o = {}) {
     } else if (it.repeat) { delete it.repeat; delete it.days; delete it.doneDates; it.done = false; }
     if (isNew) S.items.push(it);
     if (A.fromMoment) { const m = S.moments.find(x => x.id === A.fromMoment); if (m) m.planned = it.id; }
+    const pid = A.partner; const cardSh = card && cardById(card) && cardById(card).sh;
     save(); closeSheet(true); render();
+    if (pid && !cardSh && !it.ish && typeof shareItem === 'function') setTimeout(() => needName(async () => {
+      const cs = lang() === 'cs';
+      try { const ch = await shareItem(it); if (pid === 'invite') openInvite(ch); else { const ok = await giveKey(ch, pid); render(); toast(esc(ok ? (cs ? 'Sdíleno ' : 'Shared ') + withNames(partners().filter(p => p.id === pid)) : (cs ? 'Nepovedlo se sdílet' : 'Could not share'))); } }
+      catch (e) { toast(esc(cs ? 'Bez spojení. Položka je zatím jen tvoje.' : 'Offline. The item is just yours for now.')); }
+    }), 380);
     if (isNew) toast(esc(it.repeat ? t('saved') + ' · ' + repText(it) : it.date ? t('planned', dayName(it.date) + (it.time ? ' ' + it.time : '')) : t('undated')), { label: t('undo'), fn: () => { S.items = S.items.filter(x => x !== it); S.moments.forEach(m => { if (m.planned === it.id) delete m.planned; }); save(); render(); } });
     else toast(esc(t('saved')));
     if (isNew && it.time && it.remind != null && typeof maybeAskPush === 'function') setTimeout(maybeAskPush, 5200);
     return;
   }
-  // idea (note / photo / video)
+  // idea (note / photo / video / link)
+  if (!A.file && typeof isURL === 'function' && isURL(A.text)) {
+    const m = addLink(A.text, '', card);
+    if (o.keep) { A.text = ''; const ta = $('#aText'); if (ta) { ta.value = ''; ta.style.height = 'auto'; ta.focus({ preventScroll: true }); } const c = $('#aClr'); if (c) c.hidden = true; updAdd(); }
+    else { closeSheet(true); if (V.tab !== 'board' && !V.card) go('board'); else render(); }
+    toast(esc(lang() === 'cs' ? 'Odkaz přidán' : 'Link added'), { label: t('undo'), fn: () => { S.moments = S.moments.filter(x => x !== m); save(); render(); } });
+    return;
+  }
   if (!A.file) {
     const m = { id: uid(), kind: 'note', card, note: A.text.trim(), d: T(), ts: Date.now() };
     S.moments.push(m); save(); render();
@@ -322,48 +365,124 @@ ACT.wClearTime = () => { W.time = null; W.rer(); };
 
 /* ---------------- CARD create / edit ---------------- */
 let K = null;
+/* card: name + 4 tiles (what it is · how often / deadline · step · with whom), same pattern as "+" */
 function openCardSheet(id) {
-  const c = id ? cardById(id) : null;
-  K = c ? { id: c.id, name: c.name, type: c.type, color: c.color, deadline: c.deadline || null, note: c.note || '', habitAct: '', goal: c.type === 'habit' ? goalOf(c) : 7 } : { id: null, name: '', type: 'habit', color: COLORS[S.cards.length % COLORS.length], deadline: null, note: '', habitAct: '', goal: 7 };
-  openSheet({ title: c ? t('editCard') : t('newCard'), right: t('save'), rightDisabled: !K.name, body: cardBody(), mount: mountCardSheet, onSave: saveCardSheet, dirty: () => !c && K.name.trim() });
+  const c = id ? cardById(id) : null; const ch = c && typeof chOfCard === 'function' ? chOfCard(c) : null;
+  K = c ? { id: c.id, name: c.name, type: c.type, color: c.color, deadline: c.deadline || null, goal: c.type === 'habit' ? goalOf(c) : 7, step: '', who: ch ? 'spolu' : 'me', with: [], tile: null }
+    : { id: null, name: '', type: 'habit', color: COLORS[S.cards.length % COLORS.length], deadline: null, goal: 7, step: '', who: 'me', with: [], tile: null };
+  openSheet({ title: c ? t('editCard') : t('newCard'), leftHTML: '<button class="xbtn in press" data-a="sheetCancel" aria-label="' + esc(t('cancel')) + '">' + ico('x', 16, 2.4) + '</button>', right: t('save'), rightDisabled: !K.name, body: cardBody(), mount: mountCardSheet, onSave: saveCardSheet, dirty: () => !c && K.name.trim(), cls: 'addsheet cardsheet' });
+}
+function kTile(k, cap, val, sub, pre) {
+  const on = K.tile === k;
+  return '<button class="atile ' + (on ? 'cr' : 'in') + ' press" data-a="kTile" data-k="' + k + '" aria-expanded="' + on + '"><span class="cap">' + esc(cap) + '</span><span class="v">' + (pre || '') + '<span>' + val + '</span></span><small>' + esc(sub) + '</small></button>';
+}
+function kCh() { return K.id && typeof chOfCard === 'function' ? chOfCard(cardById(K.id)) : null; }
+function kWith() { return (typeof partners === 'function' ? partners() : []).filter(p => K.with.includes(p.id)); }
+function kWhoSub() {
+  const cs = lang() === 'cs'; const ch = kCh();
+  if (K.who !== 'spolu') return cs ? 'soukromá' : 'private';
+  if (ch) { const o = others(ch); return o.length ? withNames(o) : (cs ? 'zatím jen ty' : 'just you so far'); }
+  const w = kWith(); return w.length ? withNames(w) : (cs ? 'pozveš po uložení' : 'invite after saving');
+}
+function kOpt(a, k, icn, title, sub, on) {
+  return '<button class="kopt' + (on ? ' on' : '') + ' press" data-a="' + a + '" data-k="' + k + '"><span class="oi">' + ico(icn, 18, 2) + '</span><span class="ot"><span>' + esc(title) + '</span><small>' + esc(sub) + '</small></span>' + (on ? '<span class="ok">' + ico('check', 13, 3) + '</span>' : '') + '</button>';
+}
+function kTray() {
+  const cs = lang() === 'cs'; const hb = K.type === 'habit';
+  if (K.tile === 'type') return kOpt('kType', 'habit', 'repeat', t('habit'), cs ? 'Opakuju to pořád · trénink, čtení, spánek' : 'I keep doing it · gym, reading, sleep', hb) + kOpt('kType', 'project', 'spark', t('project'), cs ? 'Má cíl a konec · stěhování, bakalářka' : 'Has a goal and an end · moving, thesis', !hb);
+  if (K.tile === 'freq') return '<div class="chips wrap">' + [1, 2, 3, 4, 5, 6, 7].map(n => '<button class="chip ' + (K.goal === n ? 'cr' : 'in') + ' press" data-a="kGoal" data-k="' + n + '">' + esc(goalText(n)) + '</button>').join('') + '</div><div class="muted asub">' + esc(cs ? 'Kolik dní v týdnu. Karta pak počítá s tímhle cílem.' : 'Days per week. The card counts against this goal.') + '</div>';
+  if (K.tile === 'dl') {
+    const opts = [['', cs ? 'Bez termínu' : 'None'], [addD(T(), 7), cs ? 'Za týden' : 'In a week'], [addD(T(), 14), cs ? 'Za 2 týdny' : 'In 2 weeks'], [addD(T(), 30), cs ? 'Za měsíc' : 'In a month']];
+    return '<div class="chips wrap">' + opts.map(([v, l]) => '<button class="chip ' + ((K.deadline || '') === v ? 'cr' : 'in') + ' press" data-a="kDl" data-k="' + v + '">' + esc(l) + '</button>').join('')
+      + '<label class="chip pick ' + (K.deadline && !opts.some(o => o[0] === K.deadline) ? 'cr' : 'in') + '">' + ico('cal', 15, 2) + esc(K.deadline && !opts.some(o => o[0] === K.deadline) ? dayShort(K.deadline) : (cs ? 'Vybrat datum' : 'Pick a date')) + '<input type="date" id="kDl" value="' + (K.deadline || '') + '"></label></div>';
+  }
+  if (K.tile === 'step') return '<div class="fld in"><input id="kStep" value="' + esc(K.step) + '" placeholder="' + esc(hb ? (cs ? 'např. 30 min pohybu' : 'e.g. 30 min of exercise') : (cs ? 'např. Sepsat osnovu' : 'e.g. Write the outline')) + '" autocomplete="off" enterkeyhint="done"></div><div class="muted asub">' + esc(hb ? (cs ? 'Objeví se každý den v Plánu. Odškrtnutí se počítá do cíle.' : 'Shows up daily in your Plan and counts toward the goal.') : (cs ? 'Bude první úkol v kartě, den mu dáš kdykoli.' : 'Becomes the first task; give it a day any time.')) + '</div>';
+  if (K.tile === 'who') {
+    const ch = kCh();
+    if (ch) {
+      const ms = members(ch);
+      return '<div class="kpeople">' + ms.map(m => '<span class="chip in">' + avHTML(m, 22) + esc(m.me ? (cs ? 'Ty' : 'You') : m.name) + '</span>').join('') + '</div>'
+        + (ms.length < MAXP ? '<button class="pbtn ghost press" style="width:100%;margin-top:10px" data-a="spInvite" data-id="' + K.id + '">' + ico('plus', 16, 2.4) + esc(cs ? 'Pozvat další' : 'Invite more') + '</button>' : '')
+        + '<div class="muted asub">' + esc(cs ? 'Lidi spravuješ dole v kartě, sekce Lidé.' : 'Manage people at the bottom of the card.') + '</div>';
+    }
+    const ps = typeof partners === 'function' ? partners() : [];
+    return kOpt('kWho', 'me', 'lock', cs ? 'Jen já' : 'Just me', cs ? 'Vidíš jen ty' : 'Only you see it', K.who !== 'spolu')
+      + kOpt('kWho', 'spolu', 'users', cs ? 'Spolu' : 'Together', cs ? 'Až ' + MAXP + ' lidí · všichni vidí všechno v kartě' : 'Up to ' + MAXP + ' people · everyone sees everything in the card', K.who === 'spolu')
+      + (K.who === 'spolu' ? '<div class="chips wrap" style="padding:6px 4px 2px">' + ps.map(p => '<button class="chip ' + (K.with.includes(p.id) ? 'cr' : 'in') + ' press" data-a="kWith" data-k="' + p.id + '">' + avHTML(p, 22) + esc(p.name) + (K.with.includes(p.id) ? ico('check', 13, 3) : '') + '</button>').join('') + '<span class="chip in" style="opacity:.8">' + ico('plus', 14, 2.4) + esc(cs ? 'Pozvat nového' : 'Invite someone new') + '</span></div><div class="muted asub">' + esc(K.with.length ? (cs ? 'Vybraní lidé kartu uvidí hned. Dalšího pozveš odkazem.' : 'Picked people see the card right away.') : (cs ? 'Po uložení dostaneš odkaz pro parťáka.' : 'After saving you get a link for your partner.')) + '</div>' : '');
+  }
+  return '';
 }
 function cardBody() {
-  return '<span class="cap lab" style="margin-top:4px">' + esc(t('cardName')) + '</span><div class="fld in"><input id="kName" value="' + esc(K.name) + '" placeholder="' + esc(t('cardNamePh')) + '" autocomplete="off" enterkeyhint="done"></div>'
-    + '<span class="cap lab">' + esc(t('type')) + '</span><div class="seg in" style="display:grid;grid-template-columns:1fr 1fr;height:44px"><button class="' + (K.type === 'habit' ? 'on' : '') + '" style="height:38px" data-a="kType" data-k="habit">' + ico('flame', 15, 2) + esc(t('habit')) + '</button><button class="' + (K.type === 'project' ? 'on' : '') + '" style="height:38px" data-a="kType" data-k="project">' + ico('spark', 15, 2) + esc(t('project')) + '</button></div>'
-    + '<div class="muted" style="font:400 12.5px/1.4 Inter;margin:8px 4px 0">' + esc(K.type === 'habit' ? (lang() === 'cs' ? 'Návyk se opakuje. Počítá dny, sérii a rytmus.' : 'A habit repeats. It counts days, streaks and rhythm.') : (lang() === 'cs' ? 'Projekt má úkoly a může mít deadline.' : 'A project has tasks and can have a deadline.')) + '</div>'
-    + '<span class="cap lab">' + esc(t('color')) + '</span><div class="cols">' + COLORS.map(c => '<button class="' + (K.color === c ? 'on' : '') + '" style="--c:' + c + '" data-a="kColor" data-k="' + c + '" aria-label="' + c + '"></button>').join('') + '</div>'
-    + (K.type === 'habit' ? '<span class="cap lab">' + esc(t('goal')) + ' · ' + esc(t('goalSub')) + '</span><div class="chips wrap">' + [1, 2, 3, 4, 5, 6, 7].map(n => '<button class="chip ' + ((K.goal || 7) === n ? 'cr' : 'in') + ' press" data-a="kGoal" data-k="' + n + '">' + esc(goalText(n)) + '</button>').join('') + '</div>' : '')
-    + (K.type === 'habit' && !K.id ? '<span class="cap lab">' + (lang() === 'cs' ? 'Denní krok (nepovinné)' : 'Daily step (optional)') + '</span><div class="fld in"><input id="kAct" value="' + esc(K.habitAct) + '" placeholder="' + (lang() === 'cs' ? 'např. Číst 20 stran' : 'e.g. Read 20 pages') + '" autocomplete="off"></div>' : '')
-    + (K.type === 'project' ? '<span class="cap lab">' + esc(t('deadlineOpt')) + '</span><div class="chips wrap"><label class="chip pick ' + (K.deadline ? 'cr' : 'in') + '">' + ico('cal', 15, 2) + (K.deadline ? esc(dayShort(K.deadline)) : esc(t('pickDay'))) + '<input type="date" id="kDl" value="' + (K.deadline || '') + '"></label>' + (K.deadline ? '<button class="chip in press" data-a="kDlClear">' + esc(t('clear')) + '</button>' : '') + '</div>' : '')
-    + '<span class="cap lab">' + esc(t('cardNote')) + '</span><div class="fld in"><textarea id="kNote" rows="3" placeholder="' + esc(t('notePh')) + '">' + esc(K.note) + '</textarea></div>'
-    + (K.id ? '<div class="btnrow"><button class="pbtn danger press" data-a="kDelete">' + ico('trash', 18, 2) + esc(t('deleteCard')) + '</button></div>' : '');
+  const cs = lang() === 'cs'; const hb = K.type === 'habit'; const ch = kCh();
+  let h = '<div class="kname"><div class="fld in"><input id="kName" value="' + esc(K.name) + '" placeholder="' + esc(t('cardNamePh')) + '" autocomplete="off" enterkeyhint="done" aria-label="' + esc(t('cardName')) + '"></div><button class="kcol press' + (K.tile === 'color' ? ' on' : '') + '" data-a="kTile" data-k="color" style="--c:' + K.color + '" aria-label="' + esc(t('color')) + '"><i></i></button></div>';
+  if (K.tile === 'color') h += '<div class="atray in"><div class="cols">' + COLORS.map(c => '<button class="' + (K.color === c ? 'on' : '') + '" style="--c:' + c + '" data-a="kColor" data-k="' + c + '" aria-label="' + c + '"></button>').join('') + '</div></div>';
+  const whoPre = K.who === 'spolu' && typeof avStack === 'function' ? (ch ? avStack(members(ch), 20) : '<span class="pi">' + ico('users', 18, 2.2) + '</span>') : '';
+  h += '<div class="atiles">'
+    + kTile('type', cs ? 'Co to je' : 'What it is', esc(hb ? t('habit') : t('project')), hb ? (cs ? 'opakuju to pořád' : 'I keep repeating it') : (cs ? 'má cíl a konec' : 'has a goal and an end'))
+    + (hb ? kTile('freq', cs ? 'Jak často' : 'How often', esc(goalText(K.goal)), cs ? 'cíl týdne' : 'weekly goal')
+      : kTile('dl', cs ? 'Termín' : 'Deadline', esc(K.deadline ? dayShort(K.deadline) : (cs ? 'Bez termínu' : 'None')), K.deadline ? deadlineText(K.deadline) : (cs ? 'nepovinné' : 'optional')))
+    + kTile('step', K.id ? (cs ? 'Přidat úkol' : 'Add a task') : hb ? (cs ? 'Denní krok' : 'Daily step') : (cs ? 'První krok' : 'First step'), K.step ? esc(K.step) : '—', K.id ? (cs ? 'nepovinné' : 'optional') : hb ? (cs ? 'co přesně udělat' : 'what exactly') : (cs ? 'první úkol' : 'first task'))
+    + kTile('who', cs ? 'S kým' : 'With', esc(K.who === 'spolu' ? (cs ? 'Spolu' : 'Together') : (cs ? 'Jen já' : 'Just me')), kWhoSub(), whoPre)
+    + '</div>';
+  if (K.tile && K.tile !== 'color') h += '<div class="atray in">' + kTray() + '</div>';
+  const pv = '<b>' + esc((K.name || '').trim() || (cs ? 'Karta' : 'Card')) + ' · ' + esc(hb ? goalText(K.goal) : (K.deadline ? deadlineText(K.deadline) : t('project'))) + '</b>' + (K.who === 'spolu' ? ' · ' + esc(kWhoSub()) : '');
+  h += '<div class="hint"><span class="led" style="--c:' + K.color + '"></span><span>' + esc(cs ? 'Takhle bude ve Spaces: ' : 'In Spaces: ') + pv + '</span></div>';
+  if (!K.id) h += '<div class="muted asub" style="margin:8px 2px 0">' + esc(cs ? 'Stačí napsat název a uložit. Zbytek má rozumné výchozí hodnoty a jde změnit kdykoli.' : 'A name is enough. Everything else has sensible defaults and can change any time.') + '</div>';
+  if (K.id) {
+    if (ch) h += '<div class="btnrow"><button class="pbtn danger press" data-a="spLeave" data-id="' + K.id + '">' + ico('leave', 18, 2) + esc(cs ? 'Opustit kartu' : 'Leave card') + '</button></div>' + (ch.owner === meId() ? '<div class="btnrow" style="margin-top:8px"><button class="pbtn danger press" data-a="spDeleteAll" data-id="' + K.id + '">' + ico('trash', 18, 2) + esc(cs ? 'Smazat pro všechny' : 'Delete for everyone') + '</button></div>' : '');
+    else h += '<div class="btnrow"><button class="pbtn danger press" data-a="kDelete">' + ico('trash', 18, 2) + esc(t('deleteCard')) + '</button></div>';
+  }
+  return h;
 }
 function mountCardSheet() {
-  const n = $('#kName'); n.addEventListener('input', () => { K.name = n.value; $('#sheetSave').disabled = !K.name.trim(); });
+  const n = $('#kName'); n.addEventListener('input', () => { K.name = n.value; $('#sheetSave').disabled = !K.name.trim(); const hb = $('#sheet .hint b'); if (hb) hb.textContent = (K.name.trim() || (lang() === 'cs' ? 'Karta' : 'Card')) + ' · ' + (K.type === 'habit' ? goalText(K.goal) : (K.deadline ? deadlineText(K.deadline) : t('project'))); });
   n.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); n.blur(); } });
   if (!K.id && !K.name) autoFocus(n, 380);
-  const a = $('#kAct'); a && a.addEventListener('input', () => { K.habitAct = a.value; });
-  const dl = $('#kDl'); dl && dl.addEventListener('change', () => { if (dl.value) { K.deadline = dl.value; refreshK(); } });
-  const no = $('#kNote'); no.addEventListener('input', () => { K.note = no.value; });
+  const st = $('#kStep'); if (st) { st.addEventListener('input', () => { K.step = st.value; const v = $('[data-a="kTile"][data-k="step"] .v>span:last-child'); if (v) v.textContent = st.value || '—'; }); st.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); K.tile = null; refreshK(); } }); }
+  const dl = $('#kDl'); dl && dl.addEventListener('change', () => { if (dl.value) { K.deadline = dl.value; K.tile = null; refreshK(); } });
 }
 function refreshK() { const sb = $('#sheet .sb'); const y = sb.scrollTop; sb.innerHTML = cardBody(); mountCardSheet(); sb.scrollTop = y; $('#sheetSave').disabled = !K.name.trim(); }
-ACT.kType = el => { K.type = el.dataset.k; refreshK(); };
-ACT.kColor = el => { K.color = el.dataset.k; $$('.cols button').forEach(b => b.classList.toggle('on', b === el)); };
+const kBlur = () => { const a = document.activeElement; if (a && a.id === 'kName') a.blur(); };
+ACT.kTile = el => { kBlur(); K.tile = K.tile === el.dataset.k ? null : el.dataset.k; refreshK(); if (K.tile === 'step') { const i = $('#kStep'); i && autoFocus(i, 60); } };
+ACT.kType = el => { K.type = el.dataset.k; K.tile = null; refreshK(); };
+ACT.kColor = el => { K.color = el.dataset.k; K.tile = null; refreshK(); };
+ACT.kDl = el => { K.deadline = el.dataset.k || null; K.tile = null; refreshK(); };
 ACT.kDlClear = () => { K.deadline = null; refreshK(); };
-ACT.kGoal = el => { K.goal = +el.dataset.k; $$('[data-a="kGoal"]').forEach(b => { b.classList.toggle('cr', b === el); b.classList.toggle('in', b !== el); }); };
+ACT.kGoal = el => { K.goal = +el.dataset.k; K.tile = null; refreshK(); };
+ACT.kWho = el => { K.who = el.dataset.k; if (K.who !== 'spolu') K.with = []; refreshK(); };
+ACT.kWith = el => { const k = el.dataset.k; K.with = K.with.includes(k) ? K.with.filter(x => x !== k) : [...K.with, k].slice(0, MAXP - 1); refreshK(); };
 ACT.editGoal = () => {
   const c = cardById(V.card); if (!c) return;
   openSheet({ title: t('goal'), leftLabel: t('close'), body: '<div style="font:800 24px/1.15 \'Bricolage Grotesque\';margin:2px 2px 6px">' + esc(c.name) + '</div><div class="muted" style="font:400 14px/1.4 Inter;margin:0 2px 16px">' + esc(lang() === 'cs' ? 'Kolik dní v týdnu chceš? Analýza karty počítá s tímhle cílem.' : 'How many days a week? The card counts against this goal.') + '</div><div class="chips wrap">' + [1, 2, 3, 4, 5, 6, 7].map(n => '<button class="chip ' + (goalOf(c) === n ? 'cr' : 'in') + ' press" data-a="setGoal" data-k="' + n + '">' + esc(goalText(n)) + '</button>').join('') + '</div>' });
 };
 ACT.setGoal = el => { const c = cardById(V.card); if (!c) return; c.goal = +el.dataset.k; save(); closeSheet(true); render(); toast(esc(t('goal') + ' · ' + goalText(c.goal))); };
+function stepItem(c, txt) { return c.type === 'habit' ? { id: uid(), t: txt, card: c.id, repeat: 'daily', doneDates: [], date: T(), created: T() } : { id: uid(), t: txt, card: c.id, created: T() }; }
 function saveCardSheet() {
   if (!K.name.trim()) return;
-  if (K.id) { const c = cardById(K.id); Object.assign(c, { name: K.name.trim(), type: K.type, color: K.color, deadline: K.type === 'project' ? K.deadline : null, note: K.note, goal: K.type === 'habit' ? K.goal : undefined }); save(); closeSheet(true); render(); toast(esc(t('saved'))); return; }
-  const c = { id: uid(), name: K.name.trim(), type: K.type, color: K.color, deadline: K.type === 'project' ? K.deadline : null, note: K.note, created: T(), goal: K.type === 'habit' ? K.goal : undefined };
-  S.cards.push(c);
-  if (K.type === 'habit' && K.habitAct.trim()) S.items.push(K.goal >= 7 ? { id: uid(), t: K.habitAct.trim(), card: c.id, repeat: 'daily', doneDates: [], date: T(), created: T() } : { id: uid(), t: K.habitAct.trim(), card: c.id, created: T() });
-  save(); closeSheet(true); toast(esc(t('cardCreated')));
-  openCard(c.id);
+  const cs = lang() === 'cs'; const k = K; let c;
+  if (k.id) {
+    c = cardById(k.id); Object.assign(c, { name: k.name.trim(), type: k.type, color: k.color, deadline: k.type === 'project' ? k.deadline : null, goal: k.type === 'habit' ? k.goal : undefined });
+    if (k.step.trim()) S.items.push(stepItem(c, k.step.trim()));
+    save(); closeSheet(true); render(); toast(esc(t('saved')));
+  } else {
+    c = { id: uid(), name: k.name.trim(), type: k.type, color: k.color, deadline: k.type === 'project' ? k.deadline : null, note: '', created: T(), goal: k.type === 'habit' ? k.goal : undefined };
+    S.cards.push(c);
+    if (k.step.trim()) S.items.push(stepItem(c, k.step.trim()));
+    save(); closeSheet(true); toast(esc(t('cardCreated')));
+    openCard(c.id);
+  }
+  if (k.who === 'spolu' && !c.sh) {
+    const withIds = k.with.slice();
+    setTimeout(() => needName(async () => {
+      try {
+        toast(esc(cs ? 'Připravuju sdílení…' : 'Setting up sharing…'));
+        const ch = await shareCard(c); let gave = [];
+        for (const id of withIds) if (await giveKey(ch, id)) gave.push(id);
+        render();
+        if (!gave.length) openInvite(ch); else toast(esc((cs ? 'Sdíleno ' : 'Shared ') + withNames(partners().filter(p => gave.includes(p.id)))));
+      } catch (e) { toast(esc(e.code === 'nodb' ? (cs ? 'Na serveru chybí databáze D1 (viz návod)' : 'Server has no D1 database') : (cs ? 'Bez spojení. Karta je zatím jen tvoje, sdílet ji můžeš později.' : 'Offline. The card is just yours for now.'))); }
+    }), 420);
+  } else if (!k.id && c.type === 'habit' && k.who !== 'spolu' && typeof askPartner === 'function') setTimeout(() => askPartner(c), 900);
 }
 ACT.kDelete = () => { const id = K.id; confirmSheet(t('sureCard'), t('del'), () => { S.cards = S.cards.filter(c => c.id !== id); S.items.forEach(i => { if (i.card === id) i.card = null; }); S.moments.forEach(m => { if (m.card === id) m.card = null; }); save(); closeCard(); render(); toast(esc(t('deleted'))); }); };
 ACT.newCard = el => { if (el && el._suppress && Date.now() - el._suppress < 500) return; openCardSheet(null); };
@@ -409,12 +528,15 @@ function openViewer(id) {
 function paintViewer(dir) {
   const v = $('#viewer'); const m = S.moments.find(x => x.id === VW.list[VW.idx]); if (!m) { closeViewer(); return; }
   const c = cardById(m.card); const u = mediaNow(m.img);
-  const med = m.kind === 'note' ? '<div class="vnote frost" style="--c:' + cardColor(m.card) + '">' + esc(m.note) + '</div>' : m.kind === 'video' ? '<video src="' + u + '"' + (m.thumb ? ' poster="' + mediaNow(m.thumb) + '"' : '') + ' playsinline autoplay loop preload="auto"></video>' : '<img src="' + u + '" alt="' + esc(m.note || '') + '">';
-  v.innerHTML = (m.kind !== 'note' && m.kind !== 'video' ? '<div class="vbg" style="background-image:url(' + u + ')"></div>' : m.kind === 'note' ? '<div class="vbg" style="background:' + cardColor(m.card) + ';opacity:.5"></div>' : '')
+  const miss = typeof missingMedia === 'function' && missingMedia(m);
+  const med = m.kind === 'link' ? '<div class="vnote vlink frost" style="--c:' + cardColor(m.card) + '">' + (m.image ? '<img src="' + esc(m.image) + '" alt="" referrerpolicy="no-referrer" onerror="this.remove()">' : '') + '<span class="ls">' + ico('link', 13, 2.2) + esc(m.site || '') + '</span><b>' + esc(m.title || m.url) + '</b>' + (m.note ? '<span class="ln">' + esc(m.note) + '</span>' : '') + '<a class="pbtn cr" href="' + esc(m.url) + '" target="_blank" rel="noopener">' + ico('ext', 16, 2.2) + esc(lang() === 'cs' ? 'Otevřít odkaz' : 'Open link') + '</a></div>'
+    : miss ? '<div class="vnote frost" style="--c:' + cardColor(m.card) + '">' + esc(lang() === 'cs' ? 'Tahle fotka je zatím jen v druhém zařízení. Náhled dorazí při další synchronizaci.' : 'This photo is only on your other device so far. A preview arrives with the next sync.') + '</div>'
+    : m.kind === 'note' ? '<div class="vnote frost" style="--c:' + cardColor(m.card) + '">' + esc(m.note) + '</div>' : (m.kind === 'video' && !mediaNow(m.img) && m.thumb) ? '<img src="' + mediaNow(m.thumb) + '" alt="">' : m.kind === 'video' ? '<video src="' + u + '"' + (m.thumb ? ' poster="' + mediaNow(m.thumb) + '"' : '') + ' playsinline autoplay loop preload="auto"></video>' : '<img src="' + u + '" alt="' + esc(m.note || '') + '">';
+ v.innerHTML = (m.kind !== 'note' && m.kind !== 'video' && m.kind !== 'link' && !miss ? '<div class="vbg" style="background-image:url(' + u + ')"></div>' : m.kind === 'note' ? '<div class="vbg" style="background:' + cardColor(m.card) + ';opacity:.5"></div>' : '')
     + '<div class="vmed" id="vmed">' + med + '</div>'
     + '<div class="vtop"><span class="who frost">' + (c ? '<span class="led" style="--c:' + c.color + '"></span>' + esc(c.name) + ' · ' : '') + esc(dayName(m.d)) + '</span><span style="flex:1"></span>' + (m.kind === 'video' ? '<button class="cb frost press" id="vPlayBtn" data-a="vPlay" aria-label="Play">' + ico('pause', 20, 2) + '</button>' : '') + '<button class="cb frost press" data-a="closeViewer" aria-label="' + esc(t('close')) + '">' + ico('x', 20, 2.2) + '</button></div>'
     + (VW.list.length > 1 ? '<div class="vcount">' + (VW.idx + 1) + ' / ' + VW.list.length + '</div>' : '')
-    + (m.note && m.kind !== 'note' ? '<div class="vcap">' + esc(m.note) + '</div>' : '')
+    + (m.note && m.kind !== 'note' && m.kind !== 'link' ? '<div class="vcap">' + esc(m.note) + '</div>' : '')
     + '<div class="vact"><button class="cr press vplan" data-a="vPlan">' + ico(m.planned && itemById(m.planned) ? 'check' : 'cal', 20, 2) + esc(m.planned && itemById(m.planned) ? t('inPlan') : t('plan2')) + '</button><button class="frost press" data-a="vCard">' + ico('card', 20, 1.9) + esc(c ? c.name : t('toCard')) + '</button><button class="frost press" data-a="vPin">' + ico('pin', 20, 1.9) + esc(m.pin ? t('unpin') : t('pin')) + '</button><button class="frost press" data-a="vEdit">' + ico('edit', 20, 1.9) + esc(t('edit')) + '</button><button class="frost press red" data-a="vDelete" aria-label="' + esc(t('del')) + '">' + ico('trash', 20, 1.9) + esc(t('del')) + '</button></div>';
   const vv = $('#vmed video'); if (vv) { const pp = vv.play(); if (pp && pp.catch) pp.catch(() => { vv.muted = true; vv.play().catch(() => {}); const b = $('#vPlayBtn'); if (b) b.innerHTML = ico('play', 20, 2); }); }
   if (dir && !RM) $('#vmed').animate([{ transform: 'translateX(' + (dir * 60) + 'px)', opacity: 0 }, { transform: 'none', opacity: 1 }], { duration: 260, easing: 'cubic-bezier(.2,.8,.2,1)' });

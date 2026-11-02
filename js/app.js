@@ -88,7 +88,7 @@ function showWelcome() {
       + '<section class="ws"><div class="dialw wdemo">' + dialSVG(arcs, nm) + '<span class="orb" style="pointer-events:none"><span class="n">0:40</span><span class="s">' + esc(cs ? 'do Lekce 4' : 'to Lesson 4') + '</span></span></div><h2>' + esc(cs ? 'Den 06–24 v jednom ciferníku' : 'Your day 06–24 on one dial') + '</h2><p>' + esc(cs ? 'Oblouky jsou tvoje věci v barvě karty. Svítí jen to, co je teď a co je další.' : 'Arcs are your things in their card colour. Only now and next glow.') + '</p></section>'
       + '<section class="ws"><h2>' + esc(cs ? 'Jak ti mám říkat?' : 'What should I call you?') + '</h2><div class="fld frost namef"><input id="wName" placeholder="' + esc(cs ? 'Tvoje jméno' : 'Your name') + '" autocomplete="given-name" value="' + esc(S.name || '') + '" enterkeyhint="done"></div>'
       + '<p class="wsub">' + esc(cs ? 'Začneš první kartou: návyk nebo projekt. Zbytek přidáš přes +.' : 'You start with your first card: a habit or a project. Add the rest with +.') + '</p>'
-      + (old ? '<button class="chip frost press wold" data-a="wImport">' + ico('import', 15, 2) + esc(cs ? 'Načíst moje data ze staré Aurory' : 'Load my data from old Aurora') + '</button>' : '') + '</section>'
+      + (old ? '<button class="chip frost press wold" data-a="wImport">' + ico('import', 15, 2) + esc(cs ? 'Načíst moje data ze staré Aurory' : 'Load my data from old Aurora') + '</button>' : '') + '<button class="chip frost press wold" data-a="wSync">' + ico('sync', 15, 2) + esc(cs ? 'Už mám Auroru jinde · propojit' : 'I use Aurora elsewhere · link') + '</button><button class="chip frost press wold" style="margin-top:8px" data-a="wInvite">' + ico('users', 15, 2) + esc(cs ? 'Mám pozvánku do karty' : 'I have a card invitation') + '</button></section>'
       + '</div><div class="wfoot"><div class="wdots" id="wdots"><i class="on"></i><i></i><i></i></div><button class="pbtn cr press" id="wNext" data-a="wNext">' + esc(cs ? 'Dál' : 'Next') + '</button></div>';
     const n = $('#wName'); n.addEventListener('input', () => { S.name = n.value; }); n.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); n.blur(); } });
     const sl = $('#wsl'); sl.addEventListener('scroll', () => { const k = Math.round(sl.scrollLeft / sl.clientWidth); if (k === w._k) return; w._k = k; $$('#wdots i').forEach((d, j) => d.classList.toggle('on', j === k)); $('#wNext').textContent = k === 2 ? (lang() === 'cs' ? 'Začít' : 'Start') : (lang() === 'cs' ? 'Dál' : 'Next'); }, { passive: true });
@@ -103,6 +103,7 @@ ACT.wNext = () => { const w = $('#welcome'), sl = $('#wsl'); const k = Math.roun
   if (k < 2) { sl.scrollTo({ left: (k + 1) * sl.clientWidth, behavior: RM ? 'auto' : 'smooth' }); return; }
   ACT.wEmpty(); };
 function hideWelcome() { const w = $('#welcome'); if (!w.classList.contains('on')) return; w.classList.remove('on'); w.innerHTML = ''; if (!V.card && !V.settingsOpen) { $('#nav').classList.remove('away'); document.body.classList.remove('navless'); } }
+ACT.wSync = () => { hideWelcome(); openSettings(); ACT.syncPage(); };
 ACT.wLang = el => { S.lang = el.dataset.k; applyLook(); buildNav(); $('#welcome')._draw(); };
 ACT.wSample = async () => { const keep = { name: (S.name || '').trim(), lang: S.lang }; S = await sampleState(keep); save(); hideWelcome(); go('home'); };
 ACT.wEmpty = () => { S.name = (S.name || '').trim(); S.onboarded = true; save(); hideWelcome(); go('home'); setTimeout(() => openCardSheet(null), 350); };
@@ -151,12 +152,15 @@ async function boot() {
   $('#s-home').classList.add('on'); renderHome();
   const q = new URLSearchParams(location.search);
   if (q.has('sample') && !S.onboarded) { S = await sampleState({ lang: q.get('lang') || S.lang }); save(); renderHome(); }
+  if (typeof deskCheck === 'function') deskCheck();
   if (S.wall === 'ember' || S.wall === 'night') { S.wall = 'aurora'; save(); applyLook(); }
-  if (!S.onboarded) { showWelcome(); playIntro(); }
+  if (!S.onboarded && !q.get('join')) { showWelcome(); playIntro(); }
   if (q.get('tab') && RENDER[q.get('tab')]) go(q.get('tab'));
-  if (q.get('item') && S.onboarded) { setTimeout(() => openDeepLink(location.href), 300); }
-  if (q.has('item') || q.has('d')) { try { history.replaceState(null, '', location.pathname); } catch (e) {} }
+  if ((q.get('item') || q.get('card')) && S.onboarded) { const href = location.href; setTimeout(() => openDeepLink(href), 300); }
+  if (q.has('item') || q.has('d') || q.has('card')) { try { history.replaceState(null, '', location.pathname); } catch (e) {} }
+  if (typeof spoluBoot === 'function') spoluBoot();
   setTimeout(() => pushBoot(), 1200);
+  setTimeout(() => { syncBadge(); if (syncOn()) syncNow(); }, 900);
   refreshOldFlag();
   setTimeout(() => ensureVideoThumbs(), 800);
   if ('serviceWorker' in navigator && location.protocol === 'https:') {

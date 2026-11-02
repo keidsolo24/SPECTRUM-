@@ -8,7 +8,7 @@ dash.cloudflare.com → Sign up. Stačí plán Free.
 ## 2. Worker
 1. Vlevo **Compute (Workers) → Workers & Pages → Create → Create Worker**.
 2. Název: `aurora-push` → **Deploy**.
-3. **Edit code** → smaž všechno v `worker.js` → vlož celý obsah souboru `worker/aurora-push.js` → **Deploy**.
+3. **Edit code** → smaž všechno v `worker.js` → vlož celý obsah souboru `worker/aurora-server.js` → **Deploy**.
 
 ## 3. Úložiště (KV)
 1. Vlevo **Storage & Databases → KV → Create** → název `aurora` → Add.

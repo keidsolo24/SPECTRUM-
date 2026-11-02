@@ -12,13 +12,15 @@ function itemRow(i, d, opts = {}) {
   else if (!i.repeat && !i.date && !on) right = '<button class="r warn" data-a="when" data-id="' + i.id + '">' + esc(t('whenAdd')) + '</button>';
   else { const late = !i.repeat && i.date && i.date < T() && !on; right = '<span class="r' + (late ? ' late' : '') + '">' + esc(whenLabel(i)) + '</span>'; }
   const sub = opts.sub !== undefined ? opts.sub : itemSub(i, opts.withCard !== false);
-  return '<div class="irow' + (on ? ' done' : '') + '" role="button" tabindex="0" data-a="openItem" data-id="' + i.id + '">' + checkBtn(i, d) + '<span class="tx"><span>' + esc(i.t) + '</span>' + (sub ? '<small>' + esc(sub) + '</small>' : '') + '</span>' + right + '</div>';
+  return '<div class="irow' + (on ? ' done' : '') + '" role="button" tabindex="0" data-a="openItem" data-id="' + i.id + '">' + checkBtn(i, d) + '<span class="tx"><span>' + esc(i.t) + '</span>' + (sub ? '<small>' + esc(sub) + '</small>' : '') + '</span>' + (typeof shareAv === 'function' ? shareAv(i, d) : '') + right + '</div>';
 }
 function thumbHTML(m) {
   const c = cardColor(m.card);
   if (m.kind === 'note') return '<button class="th note" style="--c:' + c + '" data-a="viewMoment" data-id="' + m.id + '">' + esc(m.note.slice(0, 60)) + '</button>';
+  if (m.kind === 'link') return '<button class="th note" style="--c:' + c + '" data-a="viewMoment" data-id="' + m.id + '">' + ico('link', 12, 2.2) + ' ' + esc((m.title || m.url).slice(0, 50)) + '</button>';
   const u = mediaNow(m.img);
-  return '<button class="th" data-a="viewMoment" data-id="' + m.id + '">' + (m.kind === 'video' ? (m.thumb ? '<img src="' + mediaNow(m.thumb) + '" alt="">' : '<video src="' + u + '#t=0.1" muted playsinline preload="auto"></video>') : '<img src="' + u + '" alt="' + esc(m.note || '') + '" loading="lazy">') + '</button>';
+  const bd = typeof spaceOfMoment === 'function' && spaceOfMoment(m) ? momentBadge(m) : '';
+  return '<button class="th" data-a="viewMoment" data-id="' + m.id + '">' + bd + (m.kind === 'video' ? (m.thumb ? '<img src="' + mediaNow(m.thumb) + '" alt="">' : '<video src="' + u + '#t=0.1" muted playsinline preload="auto"></video>') : '<img src="' + u + '" alt="' + esc(m.note || '') + '" loading="lazy">') + '</button>';
 }
 
 /* ---------------- HOME ---------------- */
@@ -133,7 +135,7 @@ ACT.homeDone = el => {
 ACT.nudgeAdd = el => { const c = cardById(el.dataset.id); if (!c) return; S.items.push({ id: uid(), t: '10 min · ' + c.name, card: c.id, date: T(), created: T() }); save(); render(); toast(esc(t('planned', t('today')))); };
 
 /* ---------------- SPACES ---------------- */
-function filteredCards() { return S.cards.filter(c => V.deckFilter === 'all' || (V.deckFilter === 'habit' ? c.type === 'habit' : c.type === 'project')); }
+function filteredCards() { return S.cards.filter(c => V.deckFilter === 'all' || (V.deckFilter === 'shared' ? !!c.sh : V.deckFilter === 'habit' ? c.type === 'habit' : c.type === 'project')); }
 function deckCardHTML(c, idx, total) {
   const d = T();
   let ring, ringTx, sub, nextHTML, rows = '';
@@ -154,7 +156,9 @@ function deckCardHTML(c, idx, total) {
   }
   const ms = cardMoments(c.id);
   const mom = ms.length ? '<div class="cap mcap" style="margin-top:14px">' + esc(t('moments')) + ' · ' + ms.length + '</div><div class="thumbs" style="margin-top:9px">' + ms.slice(0, 4).map(thumbHTML).join('') + '</div>' : '';
-  return '<section class="spc frost" data-card="' + c.id + '" data-a="openCard" data-id="' + c.id + '" role="button"><div class="h">' + kickOf(c) + '<span class="muted" style="font:400 12.5px/1 Inter">' + pad(idx + 1) + ' / ' + pad(total) + '</span></div>'
+  const sch = c.sh && typeof chOfCard === 'function' ? chOfCard(c) : null;
+  if (sch && members(sch).length > 1) sub = '<span class="spsub">' + avStack(members(sch), 22) + esc(withNames(others(sch))) + '</span>';
+  return '<section class="spc frost" data-card="' + c.id + '" data-a="openCard" data-id="' + c.id + '" role="button"><div class="h">' + (sch ? kickOf(c).replace(/<\/span>$/, ' · Spolu</span>') : kickOf(c)) + '<span class="muted" style="font:400 12.5px/1 Inter">' + pad(idx + 1) + ' / ' + pad(total) + '</span></div>'
     + '<div class="ringw">' + ring + '<span>' + ringTx + '</span></div><div class="nm">' + esc(c.name) + '</div><div class="sub">' + sub + '</div>'
     + nextHTML + '<div style="margin-top:6px">' + rows + '</div>' + mom
     + '<div style="flex:1;min-height:14px"></div><button class="pbtn cr press" style="width:100%" data-a="openCard" data-id="' + c.id + '">' + esc(t('openCard')) + ' ' + ico('arrow', 18, 2.2) + '</button></section>';
@@ -166,7 +170,7 @@ function nextPill(i, d, c, label) {
 function emptyNext(c) { return '<button class="nextp in press" data-a="add" data-card="' + c.id + '"><span class="ic">' + ico('plus', 18, 2.4) + '</span><span class="tx"><span style="white-space:normal;font:400 14px/1.35 Inter;color:var(--ink2)">' + esc(t('noTasksYet')) + '</span></span></button>'; }
 function renderSpaces() {
   const el = $('#s-spaces'); const cs = filteredCards();
-  const chips = [['all', t('all') + ' · ' + S.cards.length], ['habit', t('habits')], ['project', t('projects')]].map(([k, l]) => '<button class="chip ' + (V.deckFilter === k ? 'cr' : 'frost') + ' press" data-a="deckFilter" data-k="' + k + '">' + (k === 'habit' ? '<span class="dot" style="--c:var(--green)"></span>' : k === 'project' ? '<span class="dot" style="--c:var(--orange)"></span>' : '') + esc(l) + '</button>').join('');
+  const chips = [['all', t('all') + ' · ' + S.cards.length], ['habit', t('habits')], ['project', t('projects')], ...(S.cards.some(c => c.sh) ? [['shared', lang() === 'cs' ? 'Spolu' : 'Together']] : [])].map(([k, l]) => '<button class="chip ' + (V.deckFilter === k ? 'cr' : 'frost') + ' press" data-a="deckFilter" data-k="' + k + '">' + (k === 'habit' ? '<span class="dot" style="--c:var(--green)"></span>' : k === 'project' ? '<span class="dot" style="--c:var(--orange)"></span>' : k === 'shared' ? ico('users', 14, 2) : '') + esc(l) + '</button>').join('');
   let body;
   if (!S.cards.length) body = '<section class="frost solid" style="border-radius:30px;padding:24px 20px;margin-top:6px"><div style="font:800 26px/1.1 \'Bricolage Grotesque\'">' + esc(t('newCard')) + '</div><p style="font:400 15px/1.45 Inter;color:var(--ink2);margin:10px 0 18px">' + esc(t('cardsEmpty')) + '</p><button class="pbtn cr press" style="width:100%" data-a="newCard">' + esc(t('addCard')) + '</button></section>';
   else if (V.spacesMode === 'deck') {
@@ -178,7 +182,9 @@ function renderSpaces() {
       let sub, ring;
       if (c.type === 'habit') { const n = habitWeek(c.id).filter(Boolean).length; const g = goalOf(c); ring = ringSVG(48, n / g, c.color, 3.5); sub = t('habit') + ' · ' + n + '/' + g + ' ' + t('thisWeek'); }
       else { const ps = projectStats(c.id); ring = ringSVG(48, ps.total ? ps.done / ps.total : 0, c.color, 3.5); sub = t('project') + ' · ' + ps.open + ' ' + t('open') + (c.deadline ? ' · ' + deadlineText(c.deadline) : ''); }
-      return '<button class="lrow frost press" data-a="openCard" data-id="' + c.id + '"><span style="position:relative;width:48px;height:48px;flex:none">' + ring + '<span class="led" style="--c:' + c.color + ';position:absolute;left:20px;top:20px"></span></span><span class="tx"><span>' + esc(c.name) + '</span><small>' + esc(sub) + '</small></span>' + ico('chev', 16, 2.2) + '</button>';
+      const shr = c.sh && typeof chOfCard === 'function' && chOfCard(c) ? members(chOfCard(c)) : null;
+      if (shr) sub = sub.replace(/^([^·]+)·/, '$1· ' + (lang() === 'cs' ? 'Spolu' : 'Together') + ' ·');
+      return '<button class="lrow frost press" data-a="openCard" data-id="' + c.id + '"><span style="position:relative;width:48px;height:48px;flex:none">' + ring + '<span class="led" style="--c:' + c.color + ';position:absolute;left:20px;top:20px"></span></span><span class="tx"><span>' + esc(c.name) + '</span><small>' + esc(sub) + '</small></span>' + (shr && shr.length > 1 ? avStack(shr, 24) : '') + ico('chev', 16, 2.2) + '</button>';
     }).join('') + '<button class="lrow frost press" data-a="newCard"><span class="ci" style="width:48px;height:48px;border-radius:24px">' + ico('plus', 20, 1.8) + '</span><span class="tx"><span>' + esc(t('newCard')) + '</span><small>' + esc(t('newCardSub')) + '</small></span></button></div>';
   }
   el.innerHTML = '<div class="hdr"><h1 class="t1">' + esc(t('spaces')) + '</h1><div class="seg frost"><button class="' + (V.spacesMode === 'deck' ? 'on' : '') + '" data-a="spacesMode" data-k="deck">' + esc(t('deck')) + '</button><button class="' + (V.spacesMode === 'list' ? 'on' : '') + '" data-a="spacesMode" data-k="list">' + esc(t('list')) + '</button></div></div>'
@@ -213,7 +219,9 @@ function heatHTML(c) {
 function renderCard() {
   const el = $('#s-card'); const c = cardById(V.card); if (!c) { closeCard(); return; }
   const d = T(); let hero = '';
-  if (c.type === 'habit') {
+  const sch = c.sh && typeof chOfCard === 'function' ? chOfCard(c) : null;
+  if (sch && c.type === 'habit') hero = spoluHero(c) + spoluStats(c) + spoluHeat(c);
+  else if (c.type === 'habit') {
     const w = habitWeek(c.id); const n = w.filter(Boolean).length; const td = dow(d);
     const wd = w.map((on, k) => '<span><i class="' + (on ? 'on' : '') + (k === td ? ' td' : '') + (k > td ? ' fu' : '') + '"></i>' + WD1[lang()][k] + '</span>').join('');
     const st = streakOf(c.id), ms = monthCount(c.id);
@@ -244,9 +252,12 @@ function renderCard() {
   const ms = cardMoments(c.id);
   const mom = '<div class="sec"><span class="cap">' + esc(t('moments')) + (ms.length ? ' · ' + ms.length : '') + '</span><div class="thumbs"><button class="th press" data-a="add" data-card="' + c.id + '" data-mode="photo" aria-label="' + esc(t('capture')) + '" style="display:flex;align-items:center;justify-content:center;border:1.5px dashed rgba(243,234,216,.35);background:none">' + ico('plus', 22, 1.8) + '</button>' + ms.map(thumbHTML).join('') + '</div></div>';
   const note = '<div class="sec"><span class="cap">' + esc(t('note')) + '</span><section class="frost solid" style="border-radius:24px;padding:14px 16px"><textarea class="cn" id="cardNote" placeholder="' + esc(t('notePh')) + '" aria-label="' + esc(t('note')) + '">' + esc(c.note || '') + '</textarea></section></div>';
-  el.innerHTML = '<div class="hdr"><button class="cb frost press" data-a="closeCard" aria-label="Back">' + ico('back', 20, 2.2) + '</button><button class="cb frost press" data-a="editCard" aria-label="' + esc(t('editCard')) + '">' + ico('more', 20, 2) + '</button></div>'
-    + kickOf(c) + '<h1 class="cname">' + esc(c.name) + '</h1>' + (c.type === 'project' && c.deadline ? '<div class="cnote">' + esc(t('deadline')) + ' ' + esc(dayShort(c.deadline)) + ' · <b>' + esc(deadlineText(c.deadline)) + '</b></div>' : '')
-    + '<div class="stack" style="margin-top:18px">' + hero + '</div>' + todayHTML + tasks + noticed + mom + note;
+  const cs = lang() === 'cs';
+  const sNote = sch && c.noteBy ? (() => { const m = members(sch).find(x => x.id === c.noteBy); return m ? ' · ' + (m.me ? (cs ? 'ty' : 'you') : m.name) + (c.noteAt ? ', ' + agoText(c.noteAt) : '') : ''; })() : '';
+  const noteS = sch ? note.replace('<span class="cap">' + esc(t('note')) + '</span>', '<span class="cap">' + esc(t('note')) + '<span class="muted" style="letter-spacing:0;text-transform:none;font:500 12px/1 Inter">' + esc(sNote) + '</span></span>') : note;
+  el.innerHTML = '<div class="hdr"><button class="cb frost press" data-a="closeCard" aria-label="Back">' + ico('back', 20, 2.2) + '</button>' + (sch ? '<span style="display:flex;gap:8px"><button class="chip frost press" style="height:44px;border-radius:22px" data-a="spInvite" data-id="' + c.id + '">' + ico('users', 16, 2) + esc(cs ? 'Pozvat' : 'Invite') + '</button>' : '') + '<button class="cb frost press" data-a="editCard" aria-label="' + esc(t('editCard')) + '">' + ico('more', 20, 2) + '</button>' + (sch ? '</span>' : '') + '</div>'
+    + (sch ? kickOf(c).replace(/<\/span>$/, ' · Spolu</span>') + '<h1 class="cname sp"><span>' + esc(c.name) + '</span>' + avStack(members(sch), 36) + '</h1>' : kickOf(c) + '<h1 class="cname">' + esc(c.name) + '</h1>') + (c.type === 'project' && c.deadline ? '<div class="cnote">' + esc(t('deadline')) + ' ' + esc(dayShort(c.deadline)) + ' · <b>' + esc(deadlineText(c.deadline)) + '</b></div>' : '')
+    + '<div class="stack" style="margin-top:18px">' + hero + '</div>' + (sch ? spoluNews(c) : '') + todayHTML + tasks + noticed + mom + (sch ? noteS + spoluPeople(c) : note);
   setAura([c.color, c.color, S.cards.find(x => x.id !== c.id)?.color || '#6f8cff']);
   const inp = $('#addTaskIn');
   const hint = $('#addTaskHint'), go2 = $('#addTaskGo');
@@ -259,7 +270,8 @@ function renderCard() {
   inp.addEventListener('input', paintHint);
   inp.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); addIt(); } });
   go2.addEventListener('click', e => { e.preventDefault(); addIt(); });
-  const ta = $('#cardNote'); let nt = null; ta.addEventListener('input', () => { clearTimeout(nt); nt = setTimeout(() => { c.note = ta.value; save(); }, 300); }); ta.addEventListener('blur', () => { c.note = ta.value; save(); });
+  const ta = $('#cardNote'); let nt = null; const setNote = () => { if (c.note === ta.value) return; c.note = ta.value; if (c.sh) { c.noteBy = meId(); c.noteAt = Date.now(); } save(); };
+  ta.addEventListener('input', () => { clearTimeout(nt); nt = setTimeout(setNote, 300); }); ta.addEventListener('blur', setNote);
   const fit = () => { ta.style.height = 'auto'; ta.style.height = Math.max(90, ta.scrollHeight) + 'px'; }; ta.addEventListener('input', fit); requestAnimationFrame(fit);
 }
 ACT.toggleShowDone = () => { V.showDone[V.card] = !V.showDone[V.card]; const el = $('#s-card'); const y = el.scrollTop; renderCard(); el.scrollTop = y; };
@@ -281,8 +293,15 @@ function boardList() {
   if (V.boardQ) { const q = V.boardQ.toLowerCase(); ms = ms.filter(m => (m.note || '').toLowerCase().includes(q) || ((cardById(m.card) || {}).name || '').toLowerCase().includes(q)); }
   return ms.sort((a, b) => (b.pin ? 1 : 0) - (a.pin ? 1 : 0) || (b.d || '').localeCompare(a.d || '') || (b.ts || 0) - (a.ts || 0));
 }
+function linkTile(m, c) {
+  return '<button class="mt link press" data-a="viewMoment" data-id="' + m.id + '">' + (m.image ? '<img class="lim" src="' + esc(m.image) + '" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">' : '') + planBadge(m)
+    + '<span class="lb"><span class="ls">' + ico('link', 12, 2.2) + esc(m.site || '') + '</span><span class="lt">' + esc(m.title || m.url) + '</span>' + (m.note ? '<span class="ln">' + esc(m.note) + '</span>' : '') + (m.card && cardById(m.card) ? '<span class="ls"><span class="dot" style="--c:' + c + '"></span>' + esc(cardById(m.card).name) + '</span>' : '') + '</span>' + (m.pin ? '<span class="pin frost">' + ico('pin', 14, 1.9) + '</span>' : '') + '</button>';
+}
+function missingMedia(m) { return m.kind !== 'note' && m.kind !== 'link' && !mediaNow(m.img) && !(m.thumb && mediaNow(m.thumb)); }
 function tileMoment(m) {
   const c = cardColor(m.card);
+  if (m.kind === 'link') return linkTile(m, c);
+  if (missingMedia(m)) return '<button class="mt miss press" data-a="viewMoment" data-id="' + m.id + '">' + ico(m.kind === 'video' ? 'film' : 'photo', 26, 1.6) + '<span>' + esc(lang() === 'cs' ? 'Fotka se načítá z druhého zařízení' : 'Photo is coming from your other device') + '</span>' + (m.note ? '<span class="capg">' + esc(m.note) + '</span>' : '') + '</button>';
   if (m.kind === 'note') return '<button class="mt note press" style="--c:' + c + '" data-a="viewMoment" data-id="' + m.id + '">' + (m.card && cardById(m.card) ? '<span class="led" style="--c:' + c + '"></span>' : '<span class="led" style="--c:rgba(243,234,216,.6);box-shadow:none"></span>') + '<div class="nt">' + esc(m.note) + '</div><div class="dt">' + esc(dayShort(m.d)) + (m.planned && itemById(m.planned) ? ' · <span class="plt">' + ico('cal', 11, 2.4) + esc(t('inPlan')) + '</span>' : '') + '</div>' + (m.pin ? '<span class="pin frost">' + ico('pin', 14, 1.9) + '</span>' : '') + '</button>';
   const u = mediaNow(m.img); const ar = 'aspect-ratio:1/' + clamp(m.r || 1, .55, 1.8).toFixed(3);
   const media = m.kind === 'video' ? (m.thumb ? '<img src="' + mediaNow(m.thumb) + '" alt="" style="' + ar + '">' : '<video src="' + u + '#t=0.1" muted playsinline preload="auto" style="' + ar + '"></video>') + '<span class="play frost">' + ico('play', 18, 2) + '</span>' + (m.dur ? '<span class="dur frost">' + Math.floor(m.dur / 60) + ':' + pad(Math.round(m.dur % 60)) + '</span>' : '') : '<img src="' + u + '" alt="' + esc(m.note || '') + '" style="' + ar + '" loading="lazy">';
@@ -319,7 +338,7 @@ function weekNav() {
 }
 function trow(i, d, nextId) {
   const on = isDone(i, d); const late = !i.repeat && i.date < T() && !on;
-  return '<div class="trow' + (on ? ' done' : '') + (i.id === nextId ? ' next' : '') + (late ? ' late' : '') + '" role="button" data-a="openItem" data-id="' + i.id + '" style="--c:' + cardColor(i.card) + '"><span class="tm">' + (late ? esc(dayShort(i.date)) : i.time || esc(t('any'))) + '</span><span class="bar"></span><span class="tx"><span>' + esc(i.t) + '</span><small>' + esc([itemSub(i), i.dur && i.time ? i.dur + ' min' : ''].filter(Boolean).join(' · ') || (i.time ? '' : t('anyTime'))) + '</small></span>' + checkBtn(i, d) + '</div>';
+  return '<div class="trow' + (on ? ' done' : '') + (i.id === nextId ? ' next' : '') + (late ? ' late' : '') + '" role="button" data-a="openItem" data-id="' + i.id + '" style="--c:' + cardColor(i.card) + '"><span class="tm">' + (late ? esc(dayShort(i.date)) : i.time || esc(t('any'))) + '</span><span class="bar"></span><span class="tx"><span>' + esc(i.t) + '</span><small>' + esc([itemSub(i), i.dur && i.time ? i.dur + ' min' : ''].filter(Boolean).join(' · ') || (i.time ? '' : t('anyTime'))) + '</small></span>' + (typeof shareAv === 'function' ? shareAv(i, d) : '') + checkBtn(i, d) + '</div>';
 }
 function renderPlan() {
   const el = $('#s-plan'); if (!V.planDay) V.planDay = T(); if (!V.planWeek) V.planWeek = weekStart(V.planDay); if (!V.monCursor) V.monCursor = T().slice(0, 7);
@@ -439,7 +458,7 @@ function applyLook() {
   document.body.classList.add('noaura');
   const img = $('#wallImg'); const w = S.wall;
   if (w === 'photo' && S.wallKey && mediaNow(S.wallKey)) { img.style.display = ''; img.src = mediaNow(S.wallKey); $('#bg').style.background = '#060b1c'; }
-  else if (w === 'aurora' || !WALLS[w]) { img.style.display = ''; if (!img.src.endsWith('wall.jpg')) img.src = 'wall.jpg'; $('#bg').style.background = '#2c4770'; }
+  else if (w === 'aurora' || !WALLS[w]) { const f = document.body.classList.contains('desk') ? 'wall-desk.jpg' : 'wall.jpg'; img.style.display = ''; if (!img.src.endsWith('/' + f)) img.src = f; $('#bg').style.background = '#6f9bb8'; }
   else { img.style.display = 'none'; $('#bg').style.background = WALLS[w].css; }
   $('#wallDim').style.background = 'rgba(8,16,28,' + (clamp(S.dim ?? 22, 0, 70) / 100) + ')';
   document.documentElement.lang = S.lang;
@@ -448,6 +467,7 @@ function srow(a, label, right, extra = '') { return '<button class="srow" data-a
 function renderSettings() {
   const el = $('#s-settings');
   if (V.settingsPage === 'notif') { el.innerHTML = notifPage(); mountNotifPage(); return; }
+  if (V.settingsPage === 'sync') { el.innerHTML = syncPage(); mountSyncPage(); return; }
   if (V.settingsPage === 'look') {
     const wl = [['aurora', t('wallAurora'), 'background-image:url(wall.jpg)'], ['photo', S.wallKey ? '' : t('ownPhoto'), S.wallKey ? 'background-image:url(' + mediaNow(S.wallKey) + ')' : 'background:rgba(255,255,255,.08)']];
     el.innerHTML = '<div class="hdr"><button class="cb frost press" data-a="settingsBack" aria-label="Back">' + ico('back', 20, 2.2) + '</button><span></span></div><h1 class="t1" style="margin-bottom:18px">' + esc(t('appearance')) + '</h1>'
@@ -463,6 +483,10 @@ function renderSettings() {
   el.innerHTML = '<div class="hdr"><button class="cb frost press" data-a="closeSettings" aria-label="Back">' + ico('back', 20, 2.2) + '</button><span></span></div><h1 class="t1" style="margin-bottom:18px">' + esc(t('settings')) + '</h1>'
     + '<button class="acct frost press" data-a="editName"><span class="avatar">' + esc(initials) + '</span><span style="display:flex;flex-direction:column;gap:6px;min-width:0;flex:1"><span style="font:600 17px/1.1 Inter">' + esc(S.name || t('yourName')) + '</span><span class="muted" style="font:400 13px/1 Inter">' + esc(t('savedLocal')) + '</span></span>' + ico('edit', 18, 2) + '</button>'
     + '<div class="sec"><span class="cap">' + esc(t('look')) + '</span><section class="grp frost solid"><button class="srow" data-a="lookPage" style="min-height:72px"><span style="flex:none;position:relative;width:34px;height:50px;border-radius:9px;overflow:hidden;' + (S.wall === 'photo' && S.wallKey ? 'background:url(' + mediaNow(S.wallKey) + ') center/cover' : S.wall !== 'aurora' && WALLS[S.wall] ? 'background:' + WALLS[S.wall].css : 'background:url(wall.jpg) center/cover') + ';box-shadow:inset 0 0 0 1px rgba(255,255,255,.3)"><i style="position:absolute;left:4px;right:4px;top:8px;height:16px;border-radius:5px;background:rgba(255,255,255,.3)"></i><i style="position:absolute;left:4px;right:4px;bottom:5px;height:7px;border-radius:4px;background:rgba(255,255,255,.4)"></i></span><span class="tx">' + esc(t('appearance')) + '<small>' + esc((S.surface === 'solid' ? t('solid') : t('glass')) + ' · ' + (S.wall === 'photo' ? t('photo') : t('wall' + S.wall.charAt(0).toUpperCase() + S.wall.slice(1)))) + '</small></span><span class="r">' + ico('chev', 15, 2.2) + '</span></button></section></div>'
+    + '<div class="sec"><span class="cap">' + esc(lang() === 'cs' ? 'Zařízení' : 'Devices') + '</span><section class="grp frost solid"><button class="srow" data-a="syncPage"><span class="ci" style="width:30px;height:30px;border-radius:15px;border:0;background:rgba(255,255,255,.08)">' + ico('sync', 15, 2) + '</span><span class="tx">' + esc(lang() === 'cs' ? 'Synchronizace' : 'Sync') + '<small>' + esc(syncOn() ? (lang() === 'cs' ? 'Propojeno · ' : 'Linked · ') + syncAgo() : (lang() === 'cs' ? 'Telefon a počítač se stejnými daty' : 'Phone and computer with the same data')) + '</small></span><span class="r">' + ico('chev', 15, 2.2) + '</span></button>'
+      + '<button class="srow" data-a="joinCodeSheet"><span class="ci" style="width:30px;height:30px;border-radius:15px;border:0;background:rgba(255,255,255,.08)">' + ico('users', 15, 2) + '</span><span class="tx">' + esc(lang() === 'cs' ? 'Pozvánka do karty' : 'Card invitation') + '<small>' + esc((S.shared || []).length ? (lang() === 'cs' ? 'Sdílíš ' + S.shared.length + '× · zadat kód' : 'Sharing ' + S.shared.length + ' · enter a code') : (lang() === 'cs' ? 'Zadat kód od parťáka' : 'Enter a code from a partner')) + '</small></span><span class="r">' + ico('chev', 15, 2.2) + '</span></button>'
+      + (window.innerWidth >= 700 ? '<button class="srow" data-a="layoutSheet"><span class="ci" style="width:30px;height:30px;border-radius:15px;border:0;background:rgba(255,255,255,.08)">' + ico('board', 15, 2) + '</span><span class="tx">' + esc(lang() === 'cs' ? 'Rozložení' : 'Layout') + '<small>' + esc(layoutLabel()) + '</small></span><span class="r">' + ico('chev', 15, 2.2) + '</span></button>' : '')
+      + '</section></div>'
     + '<div class="sec"><span class="cap">' + esc(t('notif')) + '</span><section class="grp frost solid"><button class="srow" data-a="notifPage"><span class="ci" style="width:30px;height:30px;border-radius:15px;border:0;background:rgba(255,255,255,.08)">' + ico(S.push.on ? 'bell' : 'bellOff', 15, 2) + '</span><span class="tx">' + esc(t('notif')) + '<small>' + esc(S.push.on ? (lang() === 'cs' ? 'Zapnuto · připomínky k plánům' : 'On · reminders for your plans') : (lang() === 'cs' ? 'Vypnuto · připomínky k plánům' : 'Off · reminders for your plans')) + '</small></span><span class="r">' + ico('chev', 15, 2.2) + '</span></button></section></div>'
     + '<div class="sec"><span class="cap">' + esc(t('homeCap')) + '</span><section class="grp frost solid"><button class="srow" data-a="toggleNudges"><span class="tx">' + esc(t('nudges')) + '<small>' + esc(t('nudgesSub')) + '</small></span><span class="tg' + (S.nudges ? ' on' : '') + '" style="margin-left:auto"></span></button><button class="srow" data-a="toggleWeekly"><span class="tx">' + esc(t('weekly')) + '<small>' + esc(t('weeklySub')) + '</small></span><span class="tg' + (S.weekly ? ' on' : '') + '" style="margin-left:auto"></span></button></section></div>'
     + '<div class="sec"><span class="cap">Video</span><button class="vcard press" data-a="tutorial"><img src="tutorial-poster.jpg" alt=""><span class="vplay frost">' + ico('play', 22, 2) + '</span><span class="vt"><b>' + esc(lang() === 'cs' ? 'Jak Aurora funguje' : 'How Aurora works') + '</b><small>' + esc(lang() === 'cs' ? '49 s · krok po kroku' : '49 s · step by step') + '</small></span></button></div>'

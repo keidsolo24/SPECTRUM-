@@ -74,9 +74,10 @@ function reminderList() {
       let at, title;
       if (i.remind === 'eve') { const e = new Date(y, m - 1, dd - 1, 19, 0, 0, 0).getTime(); at = Math.min(e, start - 30 * 60000); title = (cs ? 'Zítra ' : 'Tomorrow ') + i.time + ' · ' + i.t; }
       else { const r = +i.remind || 0; at = start - r * 60000; title = r === 0 ? i.t + (cs ? ' začíná teď' : ' starts now') : i.t + (cs ? ' za ' : ' in ') + (r >= 60 ? (r / 60) + ' h' : r + ' min'); }
-      if (at < now - 30000) continue;
+      if (start < now - 60000) continue;           // already started: no reminder
+      if (at < now - 30000) at = now + 5000;          // reminder time passed but it hasn't started yet: send right away
       const c = cardById(i.card);
-      const body = [i.time, c ? c.name : '', i.dur ? durLabel(i.dur) : ''].filter(Boolean).join(' · ');
+      const body = [i.time, c ? c.name : '', i.dur ? durLabel(i.dur) : '', typeof shareSub === 'function' ? shareSub(i) : ''].filter(Boolean).join(' · ');
       out.push({ k: i.id + '@' + d, at, title, body, url: './?item=' + encodeURIComponent(i.id) + '&d=' + d });
     }
   }
@@ -155,7 +156,10 @@ ACT.pushDef = el => { const k = el.dataset.k; S.push.def = k === 'off' || k === 
 /* ----- open an item from a notification tap ----- */
 function openDeepLink(href) {
   try {
-    const u = new URL(href, location.href); const id = u.searchParams.get('item'); if (!id) return;
+    const u = new URL(href, location.href); const id = u.searchParams.get('item');
+    const cid = u.searchParams.get('card');
+    if (!id && cid && cardById(cid)) { if (SH.open) closeSheet(true); if ($('#viewer').classList.contains('on')) closeViewer(); if (V.settingsOpen) closeSettings(true); go('spaces'); openCard(cid); return; }
+    if (!id) return;
     const i = itemById(id); if (!i) return;
     if (SH.open) closeSheet(true); if ($('#viewer').classList.contains('on')) closeViewer();
     const d = u.searchParams.get('d') || i.date || T();

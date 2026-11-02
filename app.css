@@ -94,7 +94,7 @@ body.solidui .frost::before,body.solidui .frost::after{display:none}
 #app{position:absolute;inset:0;z-index:1}
 .scr{position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:0 16px calc(var(--sb) + 112px);display:none}
 .scr.on{display:block;animation:scrIn .35s var(--out)}
-@keyframes scrIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes scrIn{from{opacity:0;transform:translateY(6px) scale(.992);filter:blur(8px)}60%{filter:blur(0)}to{opacity:1;transform:none;filter:none}}
 .scr.push{z-index:5;padding-bottom:calc(var(--sb) + 40px)}
 .scr:not(.push){transition:opacity .3s var(--out)}
 body.navless .scr:not(.push){opacity:0;pointer-events:none}
@@ -614,3 +614,102 @@ body.sheeting #toast.on{transform:translate(-50%,0)}
 .adv summary::-webkit-details-marker{display:none}
 .adv summary::after{content:"›";font:600 16px/1 Inter;transform:rotate(90deg);transition:transform .2s}
 .adv:not([open]) summary::after{transform:none}
+
+/* ===== v16: links + media from another device ===== */
+.mt.link{display:flex;flex-direction:column;border-radius:22px;overflow:hidden;background:var(--panel);box-shadow:inset 0 0 0 1px rgba(255,255,255,.1);text-align:left;position:relative}
+.mt.link .lim{width:100%;aspect-ratio:1.6;object-fit:cover;display:block}
+.mt.link .lb{display:flex;flex-direction:column;gap:6px;padding:12px 14px 13px}
+.ls{display:flex;align-items:center;gap:6px;font:500 11.5px/1.2 Inter;color:var(--ink3);min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.lt{font:600 14px/1.3 Inter;color:var(--ink);word-break:break-word}
+.ln{font:400 13px/1.35 Inter;color:var(--ink2)}
+.mt.miss{min-height:150px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;border-radius:22px;padding:16px;text-align:center;font:500 12.5px/1.35 Inter;color:var(--ink3);background:rgba(255,255,255,.05);border:1.5px dashed rgba(243,234,216,.22);position:relative}
+#viewer .vnote.vlink{display:flex;flex-direction:column;gap:10px;font:400 15px/1.4 Inter}
+#viewer .vnote.vlink img{width:100%;max-height:280px;object-fit:cover;border-radius:20px;margin-bottom:4px}
+#viewer .vnote.vlink b{font:800 24px/1.2 'Bricolage Grotesque'}
+#viewer .vnote.vlink .pbtn{margin-top:8px;text-decoration:none}
+
+/* ===== v17 · Spolu ===== */
+.pav{flex:none;display:inline-flex;align-items:center;justify-content:center;border-radius:50%;background:var(--pc);color:#13233a;font-weight:700;font-family:Inter;line-height:1;text-shadow:none;box-shadow:0 0 0 2px rgba(14,22,34,.92)}
+.pav.off{background:transparent;color:var(--pc);box-shadow:0 0 0 2px rgba(14,22,34,.92),inset 0 0 0 1.5px var(--pc);opacity:.75}
+.pav.plus{background:rgba(255,255,255,.1);color:var(--ink);box-shadow:0 0 0 2px rgba(14,22,34,.9),inset 0 0 0 1.5px rgba(243,234,216,.45)}
+.pavs{display:inline-flex;flex:none;align-items:center}
+.pavs .pav+.pav{margin-left:-7px}
+.irow .pavs,.trow .pavs{margin-right:2px}
+.th{position:relative}
+.th .thb{position:absolute;right:3px;bottom:3px;z-index:1}
+.cname.sp{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.cname.sp>span:first-child{min-width:0;word-break:break-word}
+.spsub{display:inline-flex;align-items:center;gap:8px}
+.hero.spolu{min-height:0}
+.pwk{display:flex;align-items:center;gap:10px;margin-top:12px}
+.pwk .pnm{flex:1;min-width:0;font:500 15px/1.2 Inter;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pwk .pw{display:flex;gap:4px}
+.pwk .pw i{width:18px;height:18px;border-radius:6px;background:rgba(255,255,255,.1)}
+.pwk .pw i.on{background:var(--c);box-shadow:0 0 8px color-mix(in srgb,var(--c) 45%,transparent)}
+.pwk .pw i.td{box-shadow:inset 0 0 0 2px var(--ink)}
+.pwk .pw i.on.td{box-shadow:inset 0 0 0 2px rgba(19,35,58,.55),0 0 8px color-mix(in srgb,var(--c) 45%,transparent)}
+.pwk .pw i.fu{background:none;box-shadow:inset 0 0 0 1px rgba(255,255,255,.16)}
+.pwk>b{width:34px;text-align:right;font:700 14.5px/1 Inter;flex:none}
+.pjoin{display:flex;align-items:center;gap:14px;margin-top:16px;padding-top:14px;border-top:1px solid rgba(255,255,255,.08)}
+.pjoin .pring{position:relative;width:54px;height:54px;flex:none}
+.pjoin .pring svg{position:absolute;inset:0}
+.pjoin .pring b{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font:700 12.5px/1 Inter}
+.pjoin .tx{display:flex;flex-direction:column;gap:5px;min-width:0}
+.pjoin .tx b{font:600 15px/1.25 Inter}
+.pjoin .tx small{font:400 12.5px/1.2 Inter;color:var(--ink3)}
+.pmon{display:flex!important;align-items:center;gap:6px}
+.pmon .num{font-size:26px;margin-right:6px}
+.pheat i.ph{display:flex;gap:2px;padding:2px;overflow:hidden;background:rgba(255,255,255,.07);cursor:default}
+.pheat i.ph u{flex:1;display:block;border-radius:3px}
+.pheat i.ph.td{box-shadow:inset 0 0 0 2px var(--ink);padding:3px}
+.plg{display:flex;gap:10px;font:400 12px/1 Inter;color:var(--ink3)}
+.plg span{display:flex;align-items:center;gap:5px}
+.plg i{width:10px;height:10px;border-radius:3px;display:block}
+.pact{display:flex;align-items:center;gap:12px;min-height:56px;border-top:1px solid rgba(255,255,255,.07)}
+.pact:first-child{border-top:0}
+.pact .tx{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
+.pact .tx span{font:500 14.5px/1.25 Inter}
+.pact .tx small{font:400 12px/1 Inter;color:var(--ink3)}
+.pmem{min-height:66px}
+.sec>.cap:has(.muted){display:flex;justify-content:space-between;align-items:center}
+/* card sheet */
+.kname{display:flex;gap:8px;align-items:stretch}
+.kname .fld{flex:1;min-width:0}
+.kname .fld input{width:100%;border:0;outline:0;background:none;font:700 21px/1.25 'Bricolage Grotesque';color:var(--ink)}
+.kcol{flex:none;width:56px;border-radius:20px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.08);box-shadow:inset 0 0 0 1px rgba(255,255,255,.1)}
+.kcol i{width:24px;height:24px;border-radius:12px;background:var(--c);box-shadow:0 0 12px var(--c)}
+.kcol.on{box-shadow:inset 0 0 0 2px var(--cream)}
+.kopt{display:flex;align-items:center;gap:12px;width:100%;padding:11px;border-radius:16px;text-align:left}
+.kopt+.kopt{margin-top:4px}
+.kopt.on{background:rgba(236,233,225,.12);box-shadow:inset 0 0 0 1.5px rgba(236,233,225,.7)}
+.kopt .oi{flex:none;width:38px;height:38px;border-radius:12px;background:rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center}
+.kopt .ot{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
+.kopt .ot span{font:600 16px/1.2 Inter}
+.kopt .ot small{font:400 13px/1.3 Inter;color:var(--ink3)}
+.kopt .ok{flex:none;width:24px;height:24px;border-radius:12px;background:var(--cream);color:var(--navy);display:flex;align-items:center;justify-content:center}
+.kpeople{display:flex;gap:7px;flex-wrap:wrap}
+.atile .v .pavs,.atile .v .pi{flex:none;display:inline-flex}
+.lrw.static{cursor:default}
+.lrw .lv b{font-weight:500}
+/* ask / invite / join */
+.askw,.joinw{display:flex;flex-direction:column;align-items:center;text-align:center;padding:6px 6px 0}
+.askav{display:flex;margin-bottom:16px}.askav .pav+.pav{margin-left:-10px}
+.askt{font:800 26px/1.15 'Bricolage Grotesque';letter-spacing:-.02em}
+.asks{font:400 15px/1.45 Inter;margin:10px 0 22px;max-width:300px}
+.invw{text-align:center;padding:6px 0 2px}
+.invc{font:800 44px/1 'Bricolage Grotesque';letter-spacing:.05em;margin:16px 0 10px;user-select:text;-webkit-user-select:text}
+.joinw .jt{font:800 28px/1.12 'Bricolage Grotesque';letter-spacing:-.02em;margin:16px 0 18px;max-width:300px}
+.jprev{border-radius:28px;padding:18px 18px 16px}
+.jprev .jnm{font:800 32px/1.05 'Bricolage Grotesque';margin:12px 0 8px}
+.jwhat{display:flex;gap:10px;margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,.08);font:400 14px/1.45 Inter;color:var(--ink2)}
+.jwhat svg{flex:none;margin-top:1px}
+.askp .sh .tl,.joinsheet .sh .tl{display:none}
+
+/* v17 · glass materialises: content sharpens out of a blur */
+@media (prefers-reduced-motion:reduce){.scr.on{animation:none}}
+
+/* v17 · Sklo = everything is glass. Panels that used to be solid become a slightly denser glass
+   (still readable on light wallpapers). "Plné" in Settings keeps them solid as before. */
+body:not(.solidui) .solid,body:not(.solidui) .frost.solid{background:rgba(16,26,40,.5);-webkit-backdrop-filter:blur(30px) saturate(125%);backdrop-filter:blur(30px) saturate(125%);box-shadow:inset 0 0 0 1px rgba(243,234,216,.1),inset 0 1px 0 rgba(255,255,255,.08),0 12px 30px rgba(4,10,20,.18)}
+body:not(.solidui) .frost.solid::before{display:block}
+body:not(.solidui) .mt.link{background:rgba(16,26,40,.5);-webkit-backdrop-filter:blur(30px) saturate(125%);backdrop-filter:blur(30px) saturate(125%)}

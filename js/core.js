@@ -1,6 +1,6 @@
 'use strict';
 /* ============ CORE: utils, i18n, storage, model ============ */
-const VERSION = '15.1';
+const VERSION = '17';
 const PUSH_DEFAULT = 'https://calm-brook-f448.keidaurora.workers.dev'; // author's notification server, shared by testers
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -160,6 +160,8 @@ function save() {
     try { await DB.set('kv', 'state', JSON.parse(JSON.stringify(S))); saveFails = 0; }
     catch (e) { saveFails++; try { localStorage.setItem('aurora-glass-state', JSON.stringify(S)); } catch (_) {} }
     if (typeof pushSchedule === 'function') pushSchedule();
+    if (typeof syncSchedule === 'function') syncSchedule();
+    if (typeof spoluSchedule === 'function') spoluSchedule();
   }, 120);
 }
 async function loadState() {
@@ -177,6 +179,7 @@ function migrate(s) {
   o.cards = (o.cards || []).filter(Boolean); o.items = (o.items || []).filter(Boolean); o.moments = (o.moments || []).filter(Boolean);
   o.items.forEach(i => { if (i.repeat && !Array.isArray(i.doneDates)) i.doneDates = []; if (i.repeat === 'days' && !Array.isArray(i.days)) i.days = [dow(i.date || T())]; if (i.time && i.remind === undefined) i.remind = 10; });
   o.push = Object.assign({ on: false, url: PUSH_DEFAULT, key: '', id: null, secret: null, def: 10, asked: false }, o.push || {});
+  o.shared = Array.isArray(o.shared) ? o.shared.filter(x => x && x.sp && x.secret) : [];
   if (!o.push.url) o.push.url = PUSH_DEFAULT;
   return o;
 }
@@ -259,7 +262,7 @@ function setDone(i, d, val) {
     const has = i.doneDates.includes(d);
     if (val && !has) i.doneDates.push(d);
     if (!val && has) i.doneDates = i.doneDates.filter(x => x !== d);
-  } else { i.done = !!val; i.doneOn = val ? T() : null; }
+  } else { i.done = !!val; i.doneOn = val ? T() : null; if (typeof isTeam === 'function' && isTeam(i)) i.doneBy = val ? meId() : null; }
   save();
 }
 function completionsOn(d, cardId) {
